@@ -26,12 +26,16 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import net.sf.saxon.Controller;
+import net.sf.saxon.event.Receiver;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
 import com.atex.h11.custom.common.DataSource;
 import com.atex.h11.custom.common.StoryPackage;
+import com.atex.h11.custom.newsday.export.budget.util.XSLTMessageReceiver;
 import com.unisys.media.cr.adapter.ncm.common.data.pk.NCMObjectPK;
 import com.unisys.media.cr.adapter.ncm.model.data.datasource.NCMDataSource;
 import com.unisys.media.extension.common.serialize.xml.XMLSerializeWriterException;
@@ -119,51 +123,79 @@ public class Exporter {
 		StoryPackage sp = new StoryPackage(ds);
         sp.setConvertFormat(props.getProperty("convertFormat"));			
 		
-		System.out.println("Exporting packages...");
-		for (int objId : packages.keySet()) {
-			System.out.println("package: id=" + objId + ", name=" + packages.get(objId));
+		logger.info("Exporting packages...");
+		for (int spId : packages.keySet()) {
+			String spName = packages.get(spId);
+			logger.info("Package: id=" + spId + ", name=" + spName);
             
-            NCMObjectPK pk = new NCMObjectPK(objId);
+            NCMObjectPK pk = new NCMObjectPK(spId);
             Document spDoc = sp.getDocument(pk);
-            //File outFile = new File(workDir, Integer.toString(objId) + "-" + convertFormat + ".xml");
-            //sp.export(pk, outFile);
+            if (props.getProperty("debug").equalsIgnoreCase("true")) {
+            	writeDocumentToFile(spDoc, 
+        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "-" + spName + "-orig.xml"),
+        			props.getProperty("encoding"));
+			}
             	            
+            // transform package document
             Transformer t = cachedStylesheet.newTransformer();
+    		Controller controller = (Controller) t;
+    		Receiver receiver = new XSLTMessageReceiver(logger);	// for logging messages from XSLT
+    		controller.setMessageEmitter(receiver);            
+
+    		// parameters read from properties file
+	        for (String prop : props.stringPropertyNames()) {
+	            if (prop.startsWith("transform.param.")) {
+	                t.setParameter(prop.replaceFirst("transform.param.", ""), props.getProperty(prop));
+	            }
+	        }
+    		
 			t.setOutputProperty(OutputKeys.METHOD, "xml");
 			t.setOutputProperty(OutputKeys.INDENT, "no");
 			t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
 			t.setOutputProperty(OutputKeys.ENCODING, props.getProperty("encoding"));
 			DOMResult result = new DOMResult();
-			//StreamResult result = new StreamResult(new File(workDir, objId + "-transformed.xml"));	
-			t.transform(new DOMSource(spDoc), result);	        
+			t.transform(new DOMSource(spDoc), result);	     
 			
+			// resulting document
 			Document resDoc = (Document) result.getNode();
+            if (props.getProperty("debug").equalsIgnoreCase("true")) {
+            	writeDocumentToFile(spDoc, 
+        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "-" + spName + "-transformed.xml"),
+        			props.getProperty("encoding"));            	
+			}			
                 			
-			String budgetHead = (String) xp.evaluate("/package/budgetHead", 
-					resDoc.getDocumentElement(), XPathConstants.STRING);
+			boolean hasContent = (boolean) xp.evaluate("/package//text()", 
+					resDoc.getDocumentElement(), XPathConstants.BOOLEAN);
 
 			// append 
-			if (budgetHead != null && !budgetHead.trim().isEmpty()) {	// only if there's a budget head
-				System.out.println("include package. budget head=" + budgetHead);
+			if (hasContent) {	// only if there's content
 				packagesElem.appendChild(doc.importNode(resDoc.getDocumentElement(), true));
+				logger.info("Package exported: id=" + spId + ", name=" + spName);
 			} else {
-				System.out.println("skip package. no budget head");
+				logger.info("Package not exported: id=" + spId + ", name=" + spName + ". Reason: no content");
 			}
 		}
 		
 		rootElem.appendChild(packagesElem);
 		
-		// write the content into xml file
-		DOMSource source = new DOMSource(doc);
-		StreamResult result = new StreamResult(
-				new File(props.getProperty("outputDir"), "budget_" + pubDate + "_" + pub + "_jdbc.xml"));	
-		Transformer t = tf.newTransformer();
-		t.setOutputProperty(OutputKeys.METHOD, "xml");
-		t.setOutputProperty(OutputKeys.INDENT, "no");
-		t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-		t.setOutputProperty(OutputKeys.ENCODING, props.getProperty("encoding"));		
-		t.transform(source, result);		
+		// write the content into the final output file	
+		File outputFile = new File(props.getProperty("outputDir"), "budget_" + pubDate + "_" + pub + ".xml");
+		writeDocumentToFile(doc, outputFile, props.getProperty("encoding"));
+		logger.info("Exported to output file=" + outputFile.getPath());
 		
 		logger.exiting(loggerName, "write");
 	}	
+		
+	private void writeDocumentToFile(Document doc, File file, String encoding) 
+			throws TransformerException {
+		DOMSource source = new DOMSource(doc);
+		StreamResult result = new StreamResult(file);
+
+		Transformer t = tf.newTransformer();		
+		t.setOutputProperty(OutputKeys.METHOD, "xml");
+		t.setOutputProperty(OutputKeys.INDENT, "no");
+		t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+		t.setOutputProperty(OutputKeys.ENCODING, encoding);		
+		t.transform(source, result);			
+	}
 }

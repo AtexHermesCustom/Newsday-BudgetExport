@@ -53,6 +53,7 @@ public class Main {
     	    	if (creds[1] != null) password = creds[1];
         	}      
         	
+        	// go
         	Exporter exporter = new Exporter(props, user, password, pub, pubDate);
         	exporter.run();
         	
