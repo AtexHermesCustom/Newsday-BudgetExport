@@ -6,9 +6,6 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="C:/Hermes11/lib/cr-all-client103.jar"/>
-	<classpathentry kind="lib" path="C:/Hermes11/lib/jbossall-client.jar"/>
-	<classpathentry kind="lib" path="C:/Hermes11/lib/commons-logging.jar"/>
 	<classpathentry kind="src" output="target/test-classes" path="src/test/java">
 		<attributes>
 			<attribute name="optional" value="true"/>
