@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
@@ -47,7 +46,7 @@ public class Exporter {
 	private static XPathFactory xpf = null;
 	private static DocumentBuilderFactory dbf = null;		
 	
-	private static Templates cachedXSLT = null;
+	private static Templates cachedStylesheet = null;
 
 	private Properties props = null;
 	private String pub;
@@ -66,10 +65,10 @@ public class Exporter {
 	public void run() 
 			throws TransformerConfigurationException {
 		logger.entering(loggerName, "run");
+
 		
-		File xslFile = new File(props.getProperty("transformStylesheet"));
-		logger.finer("xslFile=" + xslFile.getPath());
-		cachedXSLT = tf.newTemplates(new StreamSource(xslFile));		
+		
+
 		
 		
 		
@@ -82,6 +81,13 @@ public class Exporter {
 			throws ParserConfigurationException, UnsupportedEncodingException, IOException, 
 			XMLSerializeWriterException, SAXException, TransformerException, XPathExpressionException {
 		logger.entering(loggerName, "write");
+		
+		// load transform stylesheet
+		File xslFile = new File(props.getProperty("transformStylesheet"));
+		logger.finer("xslFile=" + xslFile.getPath());
+		
+		tf = TransformerFactory.newInstance();		
+		cachedStylesheet = tf.newTemplates(new StreamSource(xslFile));				
 		
 		dbf = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = dbf.newDocumentBuilder();			
@@ -122,7 +128,7 @@ public class Exporter {
             //File outFile = new File(workDir, Integer.toString(objId) + "-" + convertFormat + ".xml");
             //sp.export(pk, outFile);
             	            
-            Transformer t = cachedXSLT.newTransformer();
+            Transformer t = cachedStylesheet.newTransformer();
 			t.setOutputProperty(OutputKeys.METHOD, "xml");
 			t.setOutputProperty(OutputKeys.INDENT, "no");
 			t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");

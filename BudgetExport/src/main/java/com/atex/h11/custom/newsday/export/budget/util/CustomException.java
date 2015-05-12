@@ -1,4 +1,4 @@
-package com.atex.h11.custom.newsday.export.budget;
+package com.atex.h11.custom.newsday.export.budget.util;
 
 public class CustomException extends Exception {
     /**
