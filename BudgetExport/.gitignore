@@ -1,0 +1,7 @@
+/bin
+/log
+*.jar
+/debug
+/done
+/target
+/work
