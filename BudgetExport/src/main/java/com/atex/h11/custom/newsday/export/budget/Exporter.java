@@ -122,6 +122,7 @@ public class Exporter {
 		
 		StoryPackage sp = new StoryPackage(ds);
         sp.setConvertFormat(props.getProperty("convertFormat"));			
+        sp.setDateFormat(Constants.DEFAULT_DATETIME_FORMAT);
 		
 		logger.info("Exporting packages...");
 		for (int spId : packages.keySet()) {
@@ -181,7 +182,7 @@ public class Exporter {
 		// write the content into the final output file	
 		File outputFile = new File(props.getProperty("outputDir"), "budget_" + pubDate + "_" + pub + ".xml");
 		writeDocumentToFile(doc, outputFile, props.getProperty("encoding"));
-		logger.info("Exported to output file=" + outputFile.getPath());
+		logger.info("Exported to output file: " + outputFile.getPath());
 		
 		logger.exiting(loggerName, "write");
 	}	
@@ -195,7 +196,11 @@ public class Exporter {
 		t.setOutputProperty(OutputKeys.METHOD, "xml");
 		t.setOutputProperty(OutputKeys.INDENT, "no");
 		t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-		t.setOutputProperty(OutputKeys.ENCODING, encoding);		
+		if (encoding != null && !encoding.isEmpty()) {
+			t.setOutputProperty(OutputKeys.ENCODING, encoding);
+		} else {
+			t.setOutputProperty(OutputKeys.ENCODING, Constants.DEFAULT_ENCODING);
+		}
 		t.transform(source, result);			
 	}
 }
