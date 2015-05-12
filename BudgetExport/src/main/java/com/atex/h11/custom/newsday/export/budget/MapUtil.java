@@ -28,12 +28,12 @@ public class MapUtil {
 			}
 		});
  
-		Map<K, V> sortedCrunchifyMap = new LinkedHashMap<K, V>();
+		Map<K, V> sortedMap = new LinkedHashMap<K, V>();
 		for (Map.Entry<K, V> entry : entries) {
-			sortedCrunchifyMap.put(entry.getKey(), entry.getValue());
+			sortedMap.put(entry.getKey(), entry.getValue());
 		}
 		
-		return sortedCrunchifyMap;
+		return sortedMap;
 	}
 	
 }
