@@ -1,0 +1,7 @@
+Running in Eclipse: Run Configuration
+
+Program arguments:
+-p ${workspace_loc:budget-export}\src\main\config\budget-export-test-windows.properties -c BATCH:BATCH -d 20150415 -l ND-PRINT
+
+VM arguments
+-Djava.security.policy=${workspace_loc:budget-export}\src\main\config\app.policy -Djava.security.manager -Djava.security.auth.login.config=${workspace_loc:budget-export}\src\main\config\auth.conf -Djndi.properties=${workspace_loc:budget-export}\src\main\config\jndi.properties -Djavax.xml.transform.TransformerFactory=net.sf.saxon.TransformerFactoryImpl -Djava.util.logging.config.file=${workspace_loc:budget-export}\src\main\config\budget-log-windows.properties

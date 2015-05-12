@@ -168,7 +168,7 @@ public class Exporter {
 			boolean hasContent = (boolean) xp.evaluate("/package//text()", 
 					resDoc.getDocumentElement(), XPathConstants.BOOLEAN);
 
-			// append 
+			// append node
 			if (hasContent) {	// only if there's content
 				packagesElem.appendChild(doc.importNode(resDoc.getDocumentElement(), true));
 				logger.info("Package exported: id=" + spId + ", name=" + spName);
