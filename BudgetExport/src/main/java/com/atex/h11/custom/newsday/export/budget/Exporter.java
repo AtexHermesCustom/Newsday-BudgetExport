@@ -52,6 +52,8 @@ import com.unisys.media.cr.model.data.query.QueryFilterClient;
 import com.unisys.media.cr.model.data.query.QueryResultClient;
 import com.unisys.media.cr.model.data.values.INodeValueClient;
 import com.unisys.media.extension.common.serialize.xml.XMLSerializeWriterException;
+import com.unisys.media.ncm.cfg.common.data.values.LevelValue;
+import com.unisys.media.ncm.cfg.model.values.UserHermesCfgValueClient;
 
 public class Exporter {
 	private static final String loggerName = Exporter.class.getName();
@@ -103,19 +105,23 @@ public class Exporter {
 		QueryFilterClient query = (QueryFilterClient) ds.newQuery("ncm-object");
 		Condition queryCondition;
 
+		// common condition
+		Condition isStoryPackage = query.newCondition(INCMCondition.OBJ_TYPE, INCMCondition.EQUAL, Integer.toString(NCMObjectNodeType.OBJ_STORY_PACKAGE));
+
 		/*
 		 * get paginated packages
 		 */		
 		logger.info("Find paginated packages");
-		Condition isStoryPackage = query.newCondition(INCMCondition.OBJ_TYPE, INCMCondition.EQUAL, Integer.toString(NCMObjectNodeType.OBJ_STORY_PACKAGE));
-		Condition isInPubLevel = query.newCondition(INCMCondition.LAY_LEVEL_ID, INCMCondition.LIKE, "03%");
+		// paginated package conditions
 		Condition isPaginated = query.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.GREATER, 0);
+		Condition isLayInPubLevel = getPubLevelCondition(query, INCMCondition.LAY_LEVEL_ID);		
 		Condition isLayPubDateWithinRangeStart = query.newCondition(INCMCondition.LAY_PUB_DATE, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
 		Condition isLayPubDateWithinRangeEnd = query.newCondition(INCMCondition.LAY_PUB_DATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
 		
+		queryCondition = null;
 		queryCondition = isStoryPackage;
-		queryCondition = queryCondition.andCondition(isInPubLevel);
 		queryCondition = queryCondition.andCondition(isPaginated);
+		queryCondition = queryCondition.andCondition(isLayInPubLevel);
 		queryCondition = queryCondition.andCondition(isLayPubDateWithinRangeStart.andCondition(isLayPubDateWithinRangeEnd));
 			
 		addQueryResultsToMap(packages, query, queryCondition);	// run query
@@ -124,12 +130,44 @@ public class Exporter {
 		 * get non-paginated packages
 		 */		
 		logger.info("Find non-paginated packages");
+		// paginated package conditions		
 		Condition isNotPaginated = query.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.EQUAL, 0);
+		Condition isObjInPubLevel = getPubLevelCondition(query, INCMCondition.OBJ_LEVEL_ID);		
 		Condition isExpPubDateWithinRangeStart = query.newCondition(INCMCondition.OBJ_EXP_PUBDATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
 		Condition isExpPubDateWithinRangeEnd = query.newCondition(INCMCondition.OBJ_EXP_PUBDATE_TO, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
 				
+		queryCondition = null;
+		queryCondition = isStoryPackage;
+		queryCondition = queryCondition.andCondition(isObjInPubLevel);
+		queryCondition = queryCondition.andCondition(isNotPaginated);
+		queryCondition = queryCondition.andCondition(isExpPubDateWithinRangeStart.andCondition(isExpPubDateWithinRangeEnd));
+			
+		addQueryResultsToMap(packages, query, queryCondition);	// run query		
+		
 		logger.exiting(loggerName, "getPackagesToExport");
 		return packages;
+	}
+	
+	private Condition getPubLevelCondition(QueryFilterClient query, String queryPropertyDefName) {
+		logger.entering(loggerName, "getPubLevelCondition");
+		Condition cond = null;
+		
+        UserHermesCfgValueClient cfgVC = ds.getUserHermesCfg();
+		
+		String[] levels = props.getProperty(pub + ".levels").split(",");
+		for (int i = 0; i < levels.length; i++) {
+	        LevelValue levelV = cfgVC.findLevelByName(levels[i]);	
+	        String levelWildCard = String.format("%02X", levelV.getId()[0]) + "%";		// use main level in hex as wildcard
+	        if (i == 0) {
+	        	cond = query.newCondition(queryPropertyDefName, INCMCondition.LIKE, levelWildCard);
+	        } else {
+	        	cond = cond.orCondition(query.newCondition(queryPropertyDefName, INCMCondition.LIKE, levelWildCard));	// or
+	        }
+	        	
+		}
+		
+		logger.exiting(loggerName, "getPubLevelCondition");
+		return cond;
 	}
 	
 	private void addQueryResultsToMap(Map<Integer, String> packages, QueryFilterClient query, Condition queryCondition) {		
@@ -223,7 +261,7 @@ public class Exporter {
             
             if (props.getProperty("debug").equalsIgnoreCase("true")) {	// for debug: dump orig xml from H11 per package
             	writeDocumentToFile(spDoc, 
-        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "-" + spName + "-orig.xml"),
+        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "_" + spName + "_orig.xml"),
         			props.getProperty("encoding"));
 			}
             	            
@@ -251,7 +289,7 @@ public class Exporter {
 			Document resDoc = (Document) result.getNode();
             if (props.getProperty("debug").equalsIgnoreCase("true")) {	// for debug: dump transformed xml per package
             	writeDocumentToFile(resDoc, 
-        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "-" + spName + "-transformed.xml"),
+        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "_" + spName + "_transformed.xml"),
         			props.getProperty("encoding"));            	
 			}			
 

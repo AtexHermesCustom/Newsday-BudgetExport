@@ -18,17 +18,19 @@
     exclude-result-prefixes="xsl xs xdt err fn local">
         
     <xsl:template match="/">
-    	<xsl:variable name="spMeta" select="ncm-object/extra-properties/SP"/>
+    	<xsl:variable name="spMeta" select="./ncm-object/extra-properties/SP"/>
 
 		<package>
 			<xsl:variable name="budgetHead" select="$spMeta/BUDGET_HEAD"/>
-			
+
 			<xsl:choose>
-				<xsl:when test="string-length(normalize-space(budgetHead)) &gt; 0"><!-- check if there's a budget head -->
-					<xsl:apply-templates select="ncm-object"/>
+				<xsl:when test="string-length(normalize-space($budgetHead)) &gt; 0"><!-- check if there's a budget head -->
+					<xsl:apply-templates select="./ncm-object"/>
+					<xsl:message>Found budget head. Transformation called</xsl:message>
 				</xsl:when>
 				<xsl:otherwise>
 					<ignore/><!-- exclude package -->
+					<xsl:message>No budget head value</xsl:message>
 				</xsl:otherwise>
 			</xsl:choose>
 		</package>

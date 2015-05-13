@@ -64,6 +64,11 @@ public class Main {
             	throw new CustomException("Missing argument: pubDate");
             }
             
+            String pubLevels = props.getProperty(pub + ".levels");
+            if (pubLevels == null || pubLevels.isEmpty()) {
+            	throw new CustomException("Invalid argument: pub or Missing property value: \"" + pub + ".levels\"");
+            }
+            
             // credentials for connecting to the datasource
         	String user = Constants.DEFAULT_HERMES_USER;
         	String password = Constants.DEFAULT_HERMES_PASSWORD;
