@@ -6,13 +6,15 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.atex.h11.custom.newsday.export.budget.util.CustomException;
+
 public class Main {
 	private static final String loggerName = Main.class.getName();
     private static final Logger logger = Logger.getLogger(loggerName);
  
 	public static void main(String[] args) {
 		logger.entering(loggerName, "main");
-		logger.info("Export started. Arguments: " + Arrays.toString(args));
+		logger.info("Budget Export started. Arguments: " + Arrays.toString(args));
 		
 		Properties props = new Properties();
 		String credentials = null;
@@ -26,24 +28,27 @@ public class Main {
                 if (args[i].equals("-p"))
                     props.load(new FileInputStream(args[++i]));
                 else if (args[i].startsWith("-p"))
-                    props.load(new FileInputStream(args[i].substring(2)));
+                    props.load(new FileInputStream(args[i].substring(2).trim()));
+                
             	// credentials user and password
-                if (args[i].equals("-c"))
+                else if (args[i].equals("-c"))
                 	credentials = args[++i].trim();
                 else if (args[i].startsWith("-c"))
-                	credentials = args[++i].trim();                
+                	credentials = args[i].substring(2).trim();
+                
                 // pubdate 
                 else if (args[i].equals("-d"))
                     pubDate = Integer.parseInt(args[++i].trim());
                 else if (args[i].startsWith("-d"))
                 	pubDate = Integer.parseInt(args[i].substring(2).trim());
+                
                 // pub level
                 else if (args[i].equals("-l"))
                     pub = args[++i].trim().toUpperCase();
                 else if (args[i].startsWith("-l"))
                 	pub = args[i].substring(2).trim().toUpperCase();
             }
-            
+                        
             // credentials for connecting to the datasource
         	String user = Constants.DEFAULT_HERMES_USER;
         	String password = Constants.DEFAULT_HERMES_PASSWORD;

@@ -99,6 +99,7 @@ public class Exporter {
 		xpf = XPathFactory.newInstance();		
 	    XPath xp = xpf.newXPath();    						
 		
+	    
 		// root elements
 		Document doc = docBuilder.newDocument();
 		Element rootElem = doc.createElement("budget");
@@ -117,21 +118,22 @@ public class Exporter {
 		
 		rootElem.appendChild(pubInfoElem);
 		
+		
 		// packages
 		Element packagesElem = doc.createElement("packages");
-		
-		StoryPackage sp = new StoryPackage(ds);
-        sp.setConvertFormat(props.getProperty("convertFormat"));			
-        sp.setDateFormat(Constants.DEFAULT_DATETIME_FORMAT);
 		
 		logger.info("Exporting packages...");
 		for (int spId : packages.keySet()) {
 			String spName = packages.get(spId);
 			logger.info("Package: id=" + spId + ", name=" + spName);
-            
+            			
             NCMObjectPK pk = new NCMObjectPK(spId);
+			StoryPackage sp = new StoryPackage(ds);
+	        sp.setConvertFormat(props.getProperty("convertFormat"));			
+	        sp.setDateFormat(Constants.DEFAULT_DATETIME_FORMAT);			            
             Document spDoc = sp.getDocument(pk);
-            if (props.getProperty("debug").equalsIgnoreCase("true")) {
+            
+            if (props.getProperty("debug").equalsIgnoreCase("true")) {	// for debug: dump orig xml from H11 per package
             	writeDocumentToFile(spDoc, 
         			new File(props.getProperty("debugDir"), Integer.toString(spId) + "-" + spName + "-orig.xml"),
         			props.getProperty("encoding"));
@@ -143,7 +145,7 @@ public class Exporter {
     		Receiver receiver = new XSLTMessageReceiver(logger);	// for logging messages from XSLT
     		controller.setMessageEmitter(receiver);            
 
-    		// parameters read from properties file
+    		// set parameters - read from properties file
 	        for (String prop : props.stringPropertyNames()) {
 	            if (prop.startsWith("transform.param.")) {
 	                t.setParameter(prop.replaceFirst("transform.param.", ""), props.getProperty(prop));
@@ -159,17 +161,17 @@ public class Exporter {
 			
 			// resulting document
 			Document resDoc = (Document) result.getNode();
-            if (props.getProperty("debug").equalsIgnoreCase("true")) {
+            if (props.getProperty("debug").equalsIgnoreCase("true")) {	// for debug: dump transformed xml per package
             	writeDocumentToFile(spDoc, 
         			new File(props.getProperty("debugDir"), Integer.toString(spId) + "-" + spName + "-transformed.xml"),
         			props.getProperty("encoding"));            	
 			}			
-                			
+
+            // check that resulting xml has content
 			boolean hasContent = (boolean) xp.evaluate("/package//text()", 
 					resDoc.getDocumentElement(), XPathConstants.BOOLEAN);
 
-			// append node
-			if (hasContent) {	// only if there's content
+			if (hasContent) {	// append only if there's content
 				packagesElem.appendChild(doc.importNode(resDoc.getDocumentElement(), true));
 				logger.info("Package exported: id=" + spId + ", name=" + spName);
 			} else {
@@ -179,7 +181,8 @@ public class Exporter {
 		
 		rootElem.appendChild(packagesElem);
 		
-		// write the content into the final output file	
+		
+		// write the output into a file	
 		File outputFile = new File(props.getProperty("outputDir"), "budget_" + pubDate + "_" + pub + ".xml");
 		writeDocumentToFile(doc, outputFile, props.getProperty("encoding"));
 		logger.info("Exported to output file: " + outputFile.getPath());
