@@ -2,6 +2,7 @@ package com.atex.h11.custom.newsday.export.budget;
 
 import java.io.FileInputStream;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,7 +19,7 @@ public class Main {
 		
 		Properties props = null;
 		String credentials = null;
-		Integer pubDate = null;		
+		Date pubDate = null;		
 		String pub = null;
 		
 		try {
@@ -42,9 +43,9 @@ public class Main {
                 
                 // pubdate 
                 else if (args[i].equals("-d"))
-                    pubDate = Integer.parseInt(args[++i].trim());
+                    pubDate = Constants.PARAM_DATE_FORMAT.parse(args[++i].trim());
                 else if (args[i].startsWith("-d"))
-                	pubDate = Integer.parseInt(args[i].substring(2).trim());
+                	pubDate = Constants.PARAM_DATE_FORMAT.parse(args[i].substring(2).trim());
                 
                 // pub level
                 else if (args[i].equals("-l"))
@@ -53,7 +54,7 @@ public class Main {
                 	pub = args[i].substring(2).trim().toUpperCase();
             }
                         
-            if (props == null) {
+            if (props == null) { 
             	throw new CustomException("Missing argument: properties");
             }
             if (pub == null) {

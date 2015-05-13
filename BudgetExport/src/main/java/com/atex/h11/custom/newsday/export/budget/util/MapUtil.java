@@ -16,7 +16,7 @@ public class MapUtil {
 	 * @param mapToSort the map to sort.
 	 * @return a map sorted on the values.
 	 */
-	public static <K, V extends Comparable<? super V>> Map<K, V> sortMap(final Map<K, V> mapToSort) {
+	public static <K, V extends Comparable<? super V>> Map<K, V> sortMapByValue(final Map<K, V> mapToSort) {
 		List<Map.Entry<K, V>> entries = new ArrayList<Map.Entry<K, V>>(mapToSort.size());
  
 		entries.addAll(mapToSort.entrySet());
