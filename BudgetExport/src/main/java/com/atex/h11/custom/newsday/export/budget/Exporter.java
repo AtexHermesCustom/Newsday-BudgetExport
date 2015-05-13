@@ -129,7 +129,7 @@ public class Exporter {
 		logger.info("Find non-paginated packages");
 		QueryFilterClient nonPaginatedQuery = (QueryFilterClient) ds.newQuery("ncm-object");
 		
-		// paginated package conditions		
+		// non-paginated package conditions		
 		Condition isNonPaginatedStoryPackage = nonPaginatedQuery.newCondition(INCMCondition.OBJ_TYPE, INCMCondition.EQUAL, Integer.toString(NCMObjectNodeType.OBJ_STORY_PACKAGE));		
 		Condition isNotPaginated = nonPaginatedQuery.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.EQUAL, 0);
 		Condition isObjInPubLevel = getPubLevelCondition(nonPaginatedQuery, INCMCondition.OBJ_LEVEL_ID);		
