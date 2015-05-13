@@ -16,7 +16,7 @@ public class Main {
 		logger.entering(loggerName, "main");
 		logger.info("Budget Export started. Arguments: " + Arrays.toString(args));
 		
-		Properties props = new Properties();
+		Properties props = null;
 		String credentials = null;
 		Integer pubDate = null;		
 		String pub = null;
@@ -25,10 +25,14 @@ public class Main {
             // Gather command line parameters.
             for (int i = 0; i < args.length; i++) {
             	// properties file
-                if (args[i].equals("-p"))
+                if (args[i].equals("-p")) {
+                	props = new Properties();
                     props.load(new FileInputStream(args[++i]));
-                else if (args[i].startsWith("-p"))
+                }
+                else if (args[i].startsWith("-p")) {
+                	props = new Properties();
                     props.load(new FileInputStream(args[i].substring(2).trim()));
+                }
                 
             	// credentials user and password
                 else if (args[i].equals("-c"))
@@ -49,6 +53,16 @@ public class Main {
                 	pub = args[i].substring(2).trim().toUpperCase();
             }
                         
+            if (props == null) {
+            	throw new CustomException("Missing argument: properties");
+            }
+            if (pub == null) {
+            	throw new CustomException("Missing argument: pub");
+            }
+            if (pubDate == null) {
+            	throw new CustomException("Missing argument: pubDate");
+            }
+            
             // credentials for connecting to the datasource
         	String user = Constants.DEFAULT_HERMES_USER;
         	String password = Constants.DEFAULT_HERMES_PASSWORD;
