@@ -101,47 +101,46 @@ public class Exporter {
 		String pubDateString = Constants.DEFAULT_DATE_FORMAT.format(pubDate);
 
 		Map<Integer, String> packages = new HashMap<Integer, String>();
-		QueryFilterClient query = (QueryFilterClient) ds.newQuery("ncm-object");
-		Condition queryCondition;
-
-		// common condition
-		Condition isStoryPackage = query.newCondition(INCMCondition.OBJ_TYPE, INCMCondition.EQUAL, Integer.toString(NCMObjectNodeType.OBJ_STORY_PACKAGE));
 
 		/*
 		 * get paginated packages
 		 */		
 		logger.info("Find paginated packages");
-		// paginated package conditions
-		Condition isPaginated = query.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.GREATER, 0);
-		Condition isLayInPubLevel = getPubLevelCondition(query, INCMCondition.LAY_LEVEL_ID);		
-		Condition isLayPubDateWithinRangeStart = query.newCondition(INCMCondition.LAY_PUB_DATE, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
-		Condition isLayPubDateWithinRangeEnd = query.newCondition(INCMCondition.LAY_PUB_DATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
+		QueryFilterClient paginatedQuery = (QueryFilterClient) ds.newQuery("ncm-object");
 		
-		queryCondition = null;
-		queryCondition = isStoryPackage;
-		queryCondition = queryCondition.andCondition(isPaginated);
-		queryCondition = queryCondition.andCondition(isLayInPubLevel);
-		queryCondition = queryCondition.andCondition(isLayPubDateWithinRangeStart.andCondition(isLayPubDateWithinRangeEnd));
+		// paginated package conditions
+		Condition isPaginatedStoryPackage = paginatedQuery.newCondition(INCMCondition.OBJ_TYPE, INCMCondition.EQUAL, Integer.toString(NCMObjectNodeType.OBJ_STORY_PACKAGE));
+		Condition isPaginated = paginatedQuery.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.GREATER, 0);
+		Condition isLayInPubLevel = getPubLevelCondition(paginatedQuery, INCMCondition.LAY_LEVEL_ID);		
+		Condition isLayPubDateWithinRangeStart = paginatedQuery.newCondition(INCMCondition.LAY_PUB_DATE, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
+		Condition isLayPubDateWithinRangeEnd = paginatedQuery.newCondition(INCMCondition.LAY_PUB_DATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
+		
+		Condition paginatedCondition = isPaginatedStoryPackage;
+		paginatedCondition = paginatedCondition.andCondition(isPaginated);
+		paginatedCondition = paginatedCondition.andCondition(isLayInPubLevel);
+		paginatedCondition = paginatedCondition.andCondition(isLayPubDateWithinRangeStart.andCondition(isLayPubDateWithinRangeEnd));
 			
-		addQueryResultsToMap(packages, query, queryCondition);	// run query
+		addQueryResultsToMap(packages, paginatedQuery, paginatedCondition);	// run query
     					
 		/*
 		 * get non-paginated packages
 		 */		
 		logger.info("Find non-paginated packages");
+		QueryFilterClient nonPaginatedQuery = (QueryFilterClient) ds.newQuery("ncm-object");
+		
 		// paginated package conditions		
-		Condition isNotPaginated = query.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.EQUAL, 0);
-		Condition isObjInPubLevel = getPubLevelCondition(query, INCMCondition.OBJ_LEVEL_ID);		
-		Condition isExpPubDateWithinRangeStart = query.newCondition(INCMCondition.OBJ_EXP_PUBDATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
-		Condition isExpPubDateWithinRangeEnd = query.newCondition(INCMCondition.OBJ_EXP_PUBDATE_TO, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
+		Condition isNonPaginatedStoryPackage = nonPaginatedQuery.newCondition(INCMCondition.OBJ_TYPE, INCMCondition.EQUAL, Integer.toString(NCMObjectNodeType.OBJ_STORY_PACKAGE));		
+		Condition isNotPaginated = nonPaginatedQuery.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.EQUAL, 0);
+		Condition isObjInPubLevel = getPubLevelCondition(nonPaginatedQuery, INCMCondition.OBJ_LEVEL_ID);		
+		Condition isExpPubDateWithinRangeStart = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
+		Condition isExpPubDateWithinRangeEnd = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE_TO, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
 				
-		queryCondition = null;
-		queryCondition = isStoryPackage;
-		queryCondition = queryCondition.andCondition(isObjInPubLevel);
-		queryCondition = queryCondition.andCondition(isNotPaginated);
-		queryCondition = queryCondition.andCondition(isExpPubDateWithinRangeStart.andCondition(isExpPubDateWithinRangeEnd));
+		Condition nonPaginatedCondition = isNonPaginatedStoryPackage;
+		nonPaginatedCondition = nonPaginatedCondition.andCondition(isObjInPubLevel);
+		nonPaginatedCondition = nonPaginatedCondition.andCondition(isNotPaginated);
+		nonPaginatedCondition = nonPaginatedCondition.andCondition(isExpPubDateWithinRangeStart.andCondition(isExpPubDateWithinRangeEnd));
 			
-		addQueryResultsToMap(packages, query, queryCondition);	// run query		
+		addQueryResultsToMap(packages, nonPaginatedQuery, nonPaginatedCondition);	// run query		
 		
 		logger.exiting(loggerName, "getPackagesToExport");
 		return packages;
@@ -171,7 +170,7 @@ public class Exporter {
 	
 	private void addQueryResultsToMap(Map<Integer, String> packages, QueryFilterClient query, Condition queryCondition) {		
 		logger.entering(loggerName, "addQueryResultsToMap");
-		
+
 		query.setCondition(queryCondition);
 		logger.info("Query condition: " + query.toString());
 		
@@ -246,6 +245,7 @@ public class Exporter {
 		
 		// packages
 		Element packagesElem = doc.createElement("packages");
+		int count = 0;
 		
 		logger.info("Exporting packages...");
 		for (int spId : packages.keySet()) {
@@ -298,13 +298,16 @@ public class Exporter {
 
 			if (hasContent) {	// append only if there's content
 				packagesElem.appendChild(doc.importNode(resDoc.getDocumentElement(), true));
+				count++;
 				logger.info("Package exported: id=" + spId + ", name=" + spName);
 			} else {
 				logger.info("Package not exported: id=" + spId + ", name=" + spName + ". Reason: no content");
 			}
 		}
 		
+		packagesElem.setAttribute("count", Integer.toString(count));
 		rootElem.appendChild(packagesElem);
+		logger.info("Packages exported count=" + count);
 		
 		
 		// write the output into a file	
