@@ -15,11 +15,11 @@ CONFDIR=$INSTALLDIR/conf
 test -z "$INSTALLDIR" && INSTALLDIR=.
 
 # Defaults
-PUB="SC_TIMES_TRIB"
+PUB="ND"
 PUBDATE="`date +%Y%m%d`"
 
 # Input arguments
-while getopts f:l:d:e:r:t argswitch
+while getopts l:d:t argswitch
 do
 	case $argswitch in
 		l)	PUB=$OPTARG;;

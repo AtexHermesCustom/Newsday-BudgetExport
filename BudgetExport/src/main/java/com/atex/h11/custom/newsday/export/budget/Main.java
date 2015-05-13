@@ -43,9 +43,9 @@ public class Main {
                 
                 // pubdate 
                 else if (args[i].equals("-d"))
-                    pubDate = Constants.PARAM_DATE_FORMAT.parse(args[++i].trim());
+                    pubDate = Constants.NON_DELIMITED_DATE_FORMAT.parse(args[++i].trim());
                 else if (args[i].startsWith("-d"))
-                	pubDate = Constants.PARAM_DATE_FORMAT.parse(args[i].substring(2).trim());
+                	pubDate = Constants.NON_DELIMITED_DATE_FORMAT.parse(args[i].substring(2).trim());
                 
                 // pub level
                 else if (args[i].equals("-l"))

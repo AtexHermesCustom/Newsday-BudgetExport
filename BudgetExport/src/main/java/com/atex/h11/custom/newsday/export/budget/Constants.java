@@ -10,7 +10,8 @@ public interface Constants {
 		
 	public static final String DEFAULT_ENCODING = "UTF-8";
 
-	public static final DateFormat PARAM_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
-	public static final DateFormat DEFAULT_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
-	public static final DateFormat DEFAULT_DATETIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	public static final DateFormat NON_DELIMITED_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
+	public static final DateFormat NON_DELIMITED_DATETIME_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
+	public static final DateFormat DELIMITED_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+	public static final DateFormat DELIMITED_DATETIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 }

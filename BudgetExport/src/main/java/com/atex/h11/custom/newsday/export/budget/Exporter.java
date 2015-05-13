@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -98,7 +99,7 @@ public class Exporter {
 	private Map<Integer, String> getPackagesToExport() {
 		logger.entering(loggerName, "getPackagesToExport");   
 		
-		String pubDateString = Constants.DEFAULT_DATE_FORMAT.format(pubDate);
+		String pubDateString = Constants.DELIMITED_DATE_FORMAT.format(pubDate);
 
 		Map<Integer, String> packages = new HashMap<Integer, String>();
 
@@ -233,7 +234,7 @@ public class Exporter {
 		Element pubInfoElem = doc.createElement("pubInfo");
 		
 		Element pubDateElem = doc.createElement("pubDate");
-		pubDateElem.appendChild(doc.createTextNode(String.valueOf(pubDate)));
+		pubDateElem.appendChild(doc.createTextNode(Constants.NON_DELIMITED_DATE_FORMAT.format(pubDate)));
 		pubInfoElem.appendChild(pubDateElem);
 		
 		Element pubElem = doc.createElement("pub");
@@ -255,13 +256,12 @@ public class Exporter {
             NCMObjectPK pk = new NCMObjectPK(spId);
 			StoryPackage sp = new StoryPackage(ds);
 	        sp.setConvertFormat(props.getProperty("convertFormat"));			
-	        sp.setDateFormat(Constants.DEFAULT_DATETIME_FORMAT);			            
+	        sp.setDateFormat(Constants.DELIMITED_DATETIME_FORMAT);			            
             Document spDoc = sp.getDocument(pk);
             
             if (props.getProperty("debug").equalsIgnoreCase("true")) {	// for debug: dump orig xml from H11 per package
             	writeDocumentToFile(spDoc, 
-        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "_" + spName + "_orig.xml"),
-        			props.getProperty("encoding"));
+        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "_" + spName + "_orig.xml"));
 			}
             	            
             // transform package document
@@ -288,12 +288,11 @@ public class Exporter {
 			Document resDoc = (Document) result.getNode();
             if (props.getProperty("debug").equalsIgnoreCase("true")) {	// for debug: dump transformed xml per package
             	writeDocumentToFile(resDoc, 
-        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "_" + spName + "_transformed.xml"),
-        			props.getProperty("encoding"));            	
+        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "_" + spName + "_transformed.xml"));            	
 			}			
 
             // check that resulting xml has content
-			boolean hasContent = (boolean) xp.evaluate("/package//text()", 
+			boolean hasContent = (Boolean) xp.evaluate("/package//text()", 
 					resDoc.getDocumentElement(), XPathConstants.BOOLEAN);
 
 			if (hasContent) {	// append only if there's content
@@ -310,28 +309,42 @@ public class Exporter {
 		logger.info("Packages exported count=" + count);
 		
 		
-		// write the output into a file	
+		// write the output into a file
+		Properties outputProps = new Properties();
+		outputProps.put(OutputKeys.METHOD, "xml");
+		outputProps.put(OutputKeys.INDENT, "yes");
+		outputProps.put(OutputKeys.OMIT_XML_DECLARATION, "no");
+		outputProps.put(OutputKeys.ENCODING, props.getProperty("encoding"));	
+		
+		Timestamp currentTimestamp = new Timestamp(new Date().getTime());
 		File outputFile = new File(props.getProperty("outputDir"), 
-			"budget_" + Constants.PARAM_DATE_FORMAT.format(pubDate) + "_" + pub + ".xml");
-		writeDocumentToFile(doc, outputFile, props.getProperty("encoding"));
+			"budget_" + Constants.NON_DELIMITED_DATE_FORMAT.format(pubDate) + "_" + pub
+			+ "_" + Constants.NON_DELIMITED_DATETIME_FORMAT.format(currentTimestamp)
+			+ ".xml");
+		writeDocumentToFile(doc, outputFile, outputProps);
 		logger.info("Exported to output file: " + outputFile.getPath());
 		
 		logger.exiting(loggerName, "write");
 	}	
-		
-	private void writeDocumentToFile(Document doc, File file, String encoding) 
+	
+	private void writeDocumentToFile(Document doc, File file) 
+			throws TransformerException {
+		writeDocumentToFile(doc, file, null);
+	}
+	
+	private void writeDocumentToFile(Document doc, File file, Properties outputProps) 
 			throws TransformerException {
 		DOMSource source = new DOMSource(doc);
 		StreamResult result = new StreamResult(file);
 
 		Transformer t = tf.newTransformer();		
-		t.setOutputProperty(OutputKeys.METHOD, "xml");
-		t.setOutputProperty(OutputKeys.INDENT, "no");
-		t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-		if (encoding != null && !encoding.isEmpty()) {
-			t.setOutputProperty(OutputKeys.ENCODING, encoding);
+		if (outputProps != null) {
+			t.setOutputProperties(outputProps);
 		} else {
-			t.setOutputProperty(OutputKeys.ENCODING, Constants.DEFAULT_ENCODING);
+			t.setOutputProperty(OutputKeys.METHOD, "xml");
+			t.setOutputProperty(OutputKeys.INDENT, "no");
+			t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+			t.setOutputProperty(OutputKeys.ENCODING, Constants.DEFAULT_ENCODING);			
 		}
 		t.transform(source, result);			
 	}
