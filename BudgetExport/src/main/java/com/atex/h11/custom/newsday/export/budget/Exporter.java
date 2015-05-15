@@ -155,7 +155,7 @@ public class Exporter {
 		
 		String[] levels = props.getProperty(pub + ".levels").split(",");
 		for (int i = 0; i < levels.length; i++) {
-	        LevelValue levelV = cfgVC.findLevelByName(levels[i]);	
+	        LevelValue levelV = cfgVC.findLevelByName(levels[i].trim());	
 	        String levelWildCard = String.format("%02X", levelV.getId()[0]) + "%";		// use main level in hex as wildcard
 	        if (i == 0) {
 	        	cond = query.newCondition(queryPropertyDefName, INCMCondition.LIKE, levelWildCard);
