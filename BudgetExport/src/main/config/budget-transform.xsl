@@ -86,6 +86,8 @@
 		<homePage><xsl:value-of select="$spMeta/HOMEPAGE"/></homePage>
 		<arrivalStatus><xsl:value-of select="$spMeta/ARRIVAL_STATUS"/></arrivalStatus>
 		<exclusiveFlag><xsl:value-of select="$spMeta/EXCLUSIVE_FLAG"/></exclusiveFlag>
+		<reviewStars><xsl:value-of select="$spMeta/REVIEW_STARS"/></reviewStars>
+		<reviewGrade><xsl:value-of select="$spMeta/REVIEW_GRADE"/></reviewGrade>
 		<embargo>
 			<date><xsl:value-of select="$spMeta/EMBARGO_DATE"/></date>
 			<time><xsl:value-of select="$spMeta/EMBARGO_TIME"/></time>
@@ -99,6 +101,6 @@
 			<xsl:for-each select="tokenize($spMeta/COMMUNITIES, ',')">
 				<community><xsl:value-of select="."/></community>
 			</xsl:for-each>			
-		</communities>	
+		</communities>
 	</xsl:template>
 </xsl:stylesheet>
