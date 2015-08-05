@@ -22,12 +22,12 @@ test -z "$INSTALLDIR" && INSTALLDIR=.
 while getopts l:d:e:o:t argswitch
 do
 	case $argswitch in
-		l)	PUB=$OPTARG;;
-		d)	PUBDATE=$OPTARG;;
-		e)  DATEDELTA=$OPTARG;;
-		o)  OUTPUTFILENAME=$OPTARG;;
-		t)	TESTFLAG=1;;
-		\?)	printf "Usage: %s -l publication [-d pubDate | -e daysFromToday] [-o outputFilename]\n" `basename $0`
+		l) PUB=$OPTARG;;
+		d) PUBDATE=$OPTARG;;
+		e) DATEDELTA=$OPTARG;;
+		o) OUTPUTFILENAME=$OPTARG;;
+		t) TESTFLAG=1;;
+		\?) printf "Usage: %s -l publication [-d pubDate | -e daysFromToday] [-o outputFilename]\n" `basename $0`
 			exit 2;;
 	esac
 done
