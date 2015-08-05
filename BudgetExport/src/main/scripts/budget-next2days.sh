@@ -26,7 +26,7 @@ for DELTA in $DELTALIST; do
 	for PUB in $PUBLIST; do
 		OUTFILE="budget_${PUB}_${DELTA}.xml"
 		echo "*** RUN Budget Export: pub=${PUB}, dateDelta=${DELTA}, outFile=${OUTFILE}" >> $LOGFILE
-		$INSTALLDIR/run-budget-export.sh -l $PUB -e $DELTA -o $OUTFILE >> $LOGFILE 2>&1
+		$INSTALLDIR/run-budget-export.sh -l $PUB -e $DELTA -o $OUTFILE
 	done
 done
 
