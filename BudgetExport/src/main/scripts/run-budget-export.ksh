@@ -14,12 +14,12 @@ CONFDIR=$INSTALLDIR/conf
 
 test -z "$INSTALLDIR" && INSTALLDIR=.
 
-# Defaults
-PUB="ND"
-PUBDATE="`date +%Y%m%d`"
+### Defaults
+##PUB="ND"
+##PUBDATE="`date +%Y%m%d`"
 
 # Input arguments
-while getopts l:d:t argswitch
+while getopts l:d:e:o:t argswitch
 do
 	case $argswitch in
 		l)	PUB=$OPTARG;;
@@ -35,14 +35,17 @@ done
 # Export arguments
 if [[ ! -z $PUB && (! -z $PUBDATE || ! -z $DATEDELTA) ]]; then
 	XARGS="-c $BATCH_USR:$BATCH_PWD -l $PUB"
+	
 	if [[ ! -z $PUBDATE ]]; then
 		XARGS="$XARGS -d $PUBDATE"
 	elif [[ ! -z $DATEDELTA ]]; then
 		XARGS="$XARGS -e $DATEDELTA"
 	fi
+	
 	if [[ ! -z $OUTPUTFILENAME ]]; then
 		XARGS="$XARGS -o $OUTPUTFILENAME"
 	fi
+	
 else
 	printf "Usage: %s -l publication [-d pubDate | -e daysFromToday] [-o outputFilename]\n" `basename $0`
 	exit 2
