@@ -21,7 +21,7 @@ public class Main {
 		Properties props = null;
 		String credentials = null;
 		Date pubDate = null;
-		Integer daysDelta = null;
+		Integer dateDelta = null;
 		String pub = null;
 		String outputFilename = null;
 		
@@ -52,9 +52,9 @@ public class Main {
 
                 // pubdate days delta
                 else if (args[i].equals("-e"))
-            		daysDelta = Integer.parseInt(args[++i].trim());
+            		dateDelta = Integer.parseInt(args[++i].trim());
                 else if (args[i].startsWith("-e"))
-                	daysDelta = Integer.parseInt(args[i].substring(2).trim());                
+                	dateDelta = Integer.parseInt(args[i].substring(2).trim());                
                 
                 // pub level
                 else if (args[i].equals("-l"))
@@ -69,10 +69,10 @@ public class Main {
                 	outputFilename = args[i].substring(2).trim();                
             }
                         
-            if (pubDate == null && daysDelta != null) {		// determine pub date using days delta param
+            if (pubDate == null && dateDelta != null) {		// determine pub date using days delta param
             	Calendar c = Calendar.getInstance(); 
             	c.setTime(Constants.NON_DELIMITED_DATE_FORMAT.parse(Constants.NON_DELIMITED_DATE_FORMAT.format(new Date()))); 
-            	c.add(Calendar.DATE, daysDelta);
+            	c.add(Calendar.DATE, dateDelta);
             	pubDate = c.getTime();
             }
             

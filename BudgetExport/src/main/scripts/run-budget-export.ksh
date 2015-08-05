@@ -24,23 +24,33 @@ do
 	case $argswitch in
 		l)	PUB=$OPTARG;;
 		d)	PUBDATE=$OPTARG;;
+		e)  DATEDELTA=$OPTARG;;
+		o)  OUTPUTFILENAME=$OPTARG;;
 		t)	TESTFLAG=1;;
-		\?)	printf "Usage: %s: [-l publication -d pubDate]\n" `basename $0`
+		\?)	printf "Usage: %s -l publication [-d pubDate | -e daysFromToday] [-o outputFilename]\n" `basename $0`
 			exit 2;;
 	esac
 done
 
 # Export arguments
-if [ ! -z "$PUB" -a ! -z "$PUBDATE" ]; then
-	XARGS="-l $PUB -d $PUBDATE -c $BATCH_USR:$BATCH_PWD"
+if [[ ! -z $PUB && (! -z $PUBDATE || ! -z $DATEDELTA) ]]; then
+	XARGS="-c $BATCH_USR:$BATCH_PWD -l $PUB"
+	if [[ ! -z $PUBDATE ]]; then
+		XARGS="$XARGS -d $PUBDATE"
+	elif [[ ! -z $DATEDELTA ]]; then
+		XARGS="$XARGS -e $DATEDELTA"
+	fi
+	if [[ ! -z $OUTPUTFILENAME ]]; then
+		XARGS="$XARGS -o $OUTPUTFILENAME"
+	fi
 else
-	printf "Usage: %s: [-l publication -p pubDate]\n" `basename $0`
+	printf "Usage: %s -l publication [-d pubDate | -e daysFromToday] [-o outputFilename]\n" `basename $0`
 	exit 2
 fi
 
 # set config files
 PROPS=budget-export.properties
-if [ "$TESTFLAG" = "1" ]; then
+if [[ $TESTFLAG -eq 1 ]]; then
     PROPS=budget-export-test.properties
 fi
 LOGPROPS=budget-log.properties
