@@ -2,6 +2,7 @@ package com.atex.h11.custom.newsday.export.budget;
 
 import java.io.FileInputStream;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -19,8 +20,10 @@ public class Main {
 		
 		Properties props = null;
 		String credentials = null;
-		Date pubDate = null;		
+		Date pubDate = null;
+		Integer daysDelta = null;
 		String pub = null;
+		String outputFilename = null;
 		
 		try {
             // Gather command line parameters.
@@ -43,17 +46,36 @@ public class Main {
                 
                 // pubdate 
                 else if (args[i].equals("-d"))
-                    pubDate = Constants.NON_DELIMITED_DATE_FORMAT.parse(args[++i].trim());
+            		pubDate = Constants.NON_DELIMITED_DATE_FORMAT.parse(args[++i].trim());
                 else if (args[i].startsWith("-d"))
-                	pubDate = Constants.NON_DELIMITED_DATE_FORMAT.parse(args[i].substring(2).trim());
+            		pubDate = Constants.NON_DELIMITED_DATE_FORMAT.parse(args[i].substring(2).trim());
+
+                // pubdate days delta
+                else if (args[i].equals("-e"))
+            		daysDelta = Integer.parseInt(args[++i].trim());
+                else if (args[i].startsWith("-e"))
+                	daysDelta = Integer.parseInt(args[i].substring(2).trim());                
                 
                 // pub level
                 else if (args[i].equals("-l"))
                     pub = args[++i].trim().toUpperCase();
                 else if (args[i].startsWith("-l"))
                 	pub = args[i].substring(2).trim().toUpperCase();
+                
+            	// output file name
+                else if (args[i].equals("-o"))
+                	outputFilename = args[++i].trim();
+                else if (args[i].startsWith("-o"))
+                	outputFilename = args[i].substring(2).trim();                
             }
                         
+            if (pubDate == null && daysDelta != null) {		// determine pub date using days delta param
+            	Calendar c = Calendar.getInstance(); 
+            	c.setTime(Constants.NON_DELIMITED_DATE_FORMAT.parse(Constants.NON_DELIMITED_DATE_FORMAT.format(new Date()))); 
+            	c.add(Calendar.DATE, daysDelta);
+            	pubDate = c.getTime();
+            }
+            
             if (props == null) { 
             	throw new CustomException("Missing argument: properties");
             }
@@ -80,6 +102,9 @@ public class Main {
         	
         	// go
         	Exporter exporter = new Exporter(props, user, password, pub, pubDate);
+        	if (outputFilename != null && !outputFilename.isEmpty()) {
+        		exporter.setOutputFilename(outputFilename);
+        	}
         	exporter.run();
         	
 		    logger.info("Export completed.");

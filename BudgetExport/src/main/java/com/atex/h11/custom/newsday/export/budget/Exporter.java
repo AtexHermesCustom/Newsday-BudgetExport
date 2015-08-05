@@ -68,6 +68,7 @@ public class Exporter {
 	private Properties props = null;
 	private String pub;
 	private Date pubDate;	
+	private String outputFilename = null;
     
 	public Exporter(Properties props, String user, String password, String pub, Date pubDate) 
 			throws FileNotFoundException, IOException {
@@ -75,8 +76,14 @@ public class Exporter {
 		this.pub = pub;
 		this.pubDate = pubDate;
 		
+		logger.info("Parameters: pub=" + pub + ", pubDate=" + Constants.NON_DELIMITED_DATE_FORMAT.format(pubDate));
+		
 		// get H11 data source
 		ds = DataSource.newInstance(user, password);
+	}
+		
+	public void setOutputFilename(String outputFilename) {
+		this.outputFilename = outputFilename;
 	}
 	
 	public void run() 
@@ -317,10 +324,15 @@ public class Exporter {
 		outputProps.put(OutputKeys.ENCODING, props.getProperty("encoding"));	
 		
 		Timestamp currentTimestamp = new Timestamp(new Date().getTime());
-		File outputFile = new File(props.getProperty("outputDir"), 
-			"budget_" + Constants.NON_DELIMITED_DATE_FORMAT.format(pubDate) + "_" + pub
-			+ "_" + Constants.NON_DELIMITED_DATETIME_FORMAT.format(currentTimestamp)
-			+ ".xml");
+		File outputFile;
+		if (outputFilename != null && !outputFilename.isEmpty()) {
+			outputFile = new File(props.getProperty("outputDir"), outputFilename);
+		} else {
+			outputFile = new File(props.getProperty("outputDir"), 
+				"budget_" + Constants.NON_DELIMITED_DATE_FORMAT.format(pubDate) + "_" + pub
+				+ "_" + Constants.NON_DELIMITED_DATETIME_FORMAT.format(currentTimestamp)
+				+ ".xml");
+		}
 		writeDocumentToFile(doc, outputFile, outputProps);
 		logger.info("Exported to output file: " + outputFile.getPath());
 		
