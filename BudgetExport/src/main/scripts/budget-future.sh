@@ -14,7 +14,7 @@ test -z "$INSTALLDIR" && INSTALLDIR=.
 LOGFILENAME="`basename $0 | cut -d. -f1`.log"
 LOGFILE=$LOGDIR/$LOGFILENAME
 
-echo "`date +'%Y%m%d%H%M%S` START" >> $LOGFILE
+echo "`date +'%Y%m%d%H%M%S'` START" >> $LOGFILE
 
 # list of publications
 PUBLIST="ND AM"
@@ -30,6 +30,6 @@ for DELTA in $DELTALIST; do
 	done
 done
 
-echo "`date +'%Y%m%d%H%M%S` END" >> $LOGFILE
+echo "`date +'%Y%m%d%H%M%S'` END" >> $LOGFILE
 
 exit
