@@ -24,7 +24,7 @@ public class Main {
 		String credentials = null;
 		List<Date> pubDates = new ArrayList<Date>();
 		Date singlePubDate = null;
-		Integer dateDelta = null;
+		String dateDeltaRange = null;
 		String pub = null;
 		String outputFilename = null;
 		
@@ -55,9 +55,9 @@ public class Main {
 
                 // pubdate days delta
                 else if (args[i].equals("-e"))
-            		dateDelta = Integer.parseInt(args[++i].trim());
+                	dateDeltaRange = args[++i].trim();
                 else if (args[i].startsWith("-e"))
-                	dateDelta = Integer.parseInt(args[i].substring(2).trim());                
+                	dateDeltaRange = args[i].substring(2).trim();                
                 
                 // pub level
                 else if (args[i].equals("-l"))
@@ -74,11 +74,26 @@ public class Main {
                         
             if (singlePubDate != null) {	// passed single pubdate
             	pubDates.add(singlePubDate);
-            } else if (singlePubDate == null && dateDelta != null) {		// determine pub date using days delta param
-            	Calendar c = Calendar.getInstance(); 
-            	c.setTime(Constants.NON_DELIMITED_DATE_FORMAT.parse(Constants.NON_DELIMITED_DATE_FORMAT.format(new Date()))); 
-            	c.add(Calendar.DATE, dateDelta);
-            	singlePubDate = c.getTime();
+            	
+            } else if (dateDeltaRange != null && ! dateDeltaRange.isEmpty()) {		// determine pub date using days delta param
+    	    	String[] range = dateDeltaRange.split(":");
+    	    	
+    	    	int deltaStart, deltaEnd;
+    	    	deltaStart = 1;	// init value: 1 means tomorrow's date
+    	    	if (range[0] != null) deltaStart = Integer.parseInt(range[0]);
+    	    	deltaEnd = deltaStart; // init to same value as deltaStart
+    	    	if (range[1] != null) deltaEnd = Integer.parseInt(range[1]);
+    	    	
+    	    	if (deltaEnd < deltaStart) deltaEnd = deltaStart;	// if invalid range, just set to same value
+    	    	
+    	    	for (int i = deltaStart; i <= deltaEnd; i++) {
+    	    		// include all pubdates in range
+	            	Calendar c = Calendar.getInstance(); 
+	            	c.setTime(Constants.NON_DELIMITED_DATE_FORMAT.parse(Constants.NON_DELIMITED_DATE_FORMAT.format(new Date()))); 
+	            	c.add(Calendar.DATE, i);	// add delta
+	            	Date d = c.getTime();
+	            	pubDates.add(d);
+    	    	}
             }
             
             if (props == null) { 
@@ -88,7 +103,7 @@ public class Main {
             	throw new CustomException("Missing argument: pub");
             }
             if (pubDates == null || pubDates.size() <= 0) {
-            	throw new CustomException("Missing argument: pubDate");
+            	throw new CustomException("Missing or invalid argument: pubDate or dateDeltaRange");
             }
             
             String pubLevels = props.getProperty(pub + ".levels");
@@ -99,7 +114,7 @@ public class Main {
             // credentials for connecting to the datasource
         	String user = Constants.DEFAULT_HERMES_USER;
         	String password = Constants.DEFAULT_HERMES_PASSWORD;
-        	if (credentials != null && ! credentials.equals("")) {
+        	if (credentials != null && ! credentials.isEmpty()) {
     	    	String[] creds = credentials.split(":");
     	    	if (creds[0] != null) user = creds[0];
     	    	if (creds[1] != null) password = creds[1];

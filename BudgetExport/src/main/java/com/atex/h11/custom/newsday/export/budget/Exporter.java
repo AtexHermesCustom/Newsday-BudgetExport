@@ -85,7 +85,7 @@ public class Exporter {
 		
 		String pubDatesList = "";
 		for (int i = 0; i < pubDates.size(); i++) {
-			if (i > 0) { pubDatesList += ","; }
+			if (i > 0) pubDatesList += ",";
 			pubDatesList += Constants.NON_DELIMITED_DATETIME_FORMAT.format(pubDates.get(i));
 		}
 		logger.info("Parameters: pub=" + pub + ", pubDates=" + pubDatesList);
@@ -117,7 +117,7 @@ public class Exporter {
 	    xp = xpf.newXPath();    				
 		
 	    
-		// root elements
+		// output xml document
 		doc = docBuilder.newDocument();
 		Element rootElem = doc.createElement("budgets");
 		doc.appendChild(rootElem);			
@@ -288,7 +288,7 @@ public class Exporter {
 			XMLSerializeWriterException, SAXException, TransformerException, XPathExpressionException {
 		logger.entering(loggerName, "write");			
 	    
-		// budget element
+		// budget element - main element per pub and pubdate
 		Element budgetElem = doc.createElement("budget");
 		doc.getDocumentElement().appendChild(budgetElem);	
 
