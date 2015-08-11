@@ -1,9 +1,11 @@
 package com.atex.h11.custom.newsday.export.budget;
 
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,7 +22,8 @@ public class Main {
 		
 		Properties props = null;
 		String credentials = null;
-		Date pubDate = null;
+		List<Date> pubDates = new ArrayList<Date>();
+		Date singlePubDate = null;
 		Integer dateDelta = null;
 		String pub = null;
 		String outputFilename = null;
@@ -46,9 +49,9 @@ public class Main {
                 
                 // pubdate 
                 else if (args[i].equals("-d"))
-            		pubDate = Constants.NON_DELIMITED_DATE_FORMAT.parse(args[++i].trim());
+                	singlePubDate = Constants.NON_DELIMITED_DATE_FORMAT.parse(args[++i].trim());
                 else if (args[i].startsWith("-d"))
-            		pubDate = Constants.NON_DELIMITED_DATE_FORMAT.parse(args[i].substring(2).trim());
+                	singlePubDate = Constants.NON_DELIMITED_DATE_FORMAT.parse(args[i].substring(2).trim());
 
                 // pubdate days delta
                 else if (args[i].equals("-e"))
@@ -69,11 +72,13 @@ public class Main {
                 	outputFilename = args[i].substring(2).trim();                
             }
                         
-            if (pubDate == null && dateDelta != null) {		// determine pub date using days delta param
+            if (singlePubDate != null) {	// passed single pubdate
+            	pubDates.add(singlePubDate);
+            } else if (singlePubDate == null && dateDelta != null) {		// determine pub date using days delta param
             	Calendar c = Calendar.getInstance(); 
             	c.setTime(Constants.NON_DELIMITED_DATE_FORMAT.parse(Constants.NON_DELIMITED_DATE_FORMAT.format(new Date()))); 
             	c.add(Calendar.DATE, dateDelta);
-            	pubDate = c.getTime();
+            	singlePubDate = c.getTime();
             }
             
             if (props == null) { 
@@ -82,7 +87,7 @@ public class Main {
             if (pub == null) {
             	throw new CustomException("Missing argument: pub");
             }
-            if (pubDate == null) {
+            if (pubDates == null || pubDates.size() <= 0) {
             	throw new CustomException("Missing argument: pubDate");
             }
             
@@ -101,7 +106,7 @@ public class Main {
         	}      
         	
         	// go
-        	Exporter exporter = new Exporter(props, user, password, pub, pubDate);
+        	Exporter exporter = new Exporter(props, user, password, pub, pubDates);
         	if (outputFilename != null && !outputFilename.isEmpty()) {
         		exporter.setOutputFilename(outputFilename);
         	}

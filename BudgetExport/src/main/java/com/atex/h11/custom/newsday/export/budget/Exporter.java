@@ -5,9 +5,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
@@ -64,19 +66,29 @@ public class Exporter {
 	private static TransformerFactory tf = null;
 	private static XPathFactory xpf = null;
 	private static DocumentBuilderFactory dbf = null;		
+	
+	private Document doc = null;	
+	private Templates cachedStylesheet = null;	
+	private DocumentBuilder docBuilder = null;
+	private XPath xp = null;
 
 	private Properties props = null;
 	private String pub;
-	private Date pubDate;	
+	private List<Date> pubDates = new ArrayList<Date>();	
 	private String outputFilename = null;
-    
-	public Exporter(Properties props, String user, String password, String pub, Date pubDate) 
+	
+	public Exporter(Properties props, String user, String password, String pub, List<Date> pubDates) 
 			throws FileNotFoundException, IOException {
 		this.props = props;
 		this.pub = pub;
-		this.pubDate = pubDate;
+		this.pubDates = pubDates;
 		
-		logger.info("Parameters: pub=" + pub + ", pubDate=" + Constants.NON_DELIMITED_DATE_FORMAT.format(pubDate));
+		String pubDatesList = "";
+		for (int i = 0; i < pubDates.size(); i++) {
+			if (i > 0) { pubDatesList += ","; }
+			pubDatesList += Constants.NON_DELIMITED_DATETIME_FORMAT.format(pubDates.get(i));
+		}
+		logger.info("Parameters: pub=" + pub + ", pubDates=" + pubDatesList);
 		
 		// get H11 data source
 		ds = DataSource.newInstance(user, password);
@@ -91,19 +103,77 @@ public class Exporter {
 			XMLSerializeWriterException, SAXException, TransformerException {
 		logger.entering(loggerName, "run");
 
+		// load transform stylesheet
+		File xslFile = new File(props.getProperty("transformStylesheet"));
+		logger.info("Transform stylesheet: " + xslFile.getPath());
+		
+		tf = TransformerFactory.newInstance();		
+		cachedStylesheet = tf.newTemplates(new StreamSource(xslFile));				
+		
+		dbf = DocumentBuilderFactory.newInstance();
+		docBuilder = dbf.newDocumentBuilder();			
+
+		xpf = XPathFactory.newInstance();		
+	    xp = xpf.newXPath();    				
+		
+	    
+		// root elements
+		doc = docBuilder.newDocument();
+		Element rootElem = doc.createElement("budgets");
+		doc.appendChild(rootElem);			
+		
+		
+		// loop per pubdate for pub
+		for (Date pubDate : pubDates) {
+			exportPackagesForPubdate(pub, pubDate);
+		}
+		
+			
+		// write the output into a file
+		Properties outputProps = new Properties();
+		outputProps.put(OutputKeys.METHOD, "xml");
+		outputProps.put(OutputKeys.INDENT, "yes");
+		outputProps.put(OutputKeys.OMIT_XML_DECLARATION, "no");
+		outputProps.put(OutputKeys.ENCODING, props.getProperty("encoding"));	
+		
+		Timestamp currentTimestamp = new Timestamp(new Date().getTime());
+		File outputFile;
+		if (outputFilename != null && !outputFilename.isEmpty()) {
+			outputFile = new File(props.getProperty("outputDir"), outputFilename);
+		} else {
+			outputFile = new File(props.getProperty("outputDir"), 
+				"budget_" + pub
+				+ "_" + Constants.NON_DELIMITED_DATETIME_FORMAT.format(currentTimestamp)
+				+ ".xml");
+		}
+		writeDocumentToFile(doc, outputFile, outputProps);
+		logger.info("Exported to output file: " + outputFile.getPath());			
+		
+		logger.exiting(loggerName, "run");   
+	}
+	
+	private void exportPackagesForPubdate(String pub, Date pubDate) 
+			throws UnsupportedEncodingException, XPathExpressionException, ParserConfigurationException, IOException, 
+			XMLSerializeWriterException, SAXException, TransformerException {
+		logger.entering(loggerName, "exportPackagesForPubdate");
+		
+		logger.info("Exporting packages for pub=" + pub + ", pubDate=" + Constants.DELIMITED_DATE_FORMAT.format(pubDate));
+		
 		// get packages to export
-		Map<Integer, String> packages = getPackagesToExport();
+		Map<Integer, String> packages = getPackagesToExport(pub, pubDate);
 		
 		// sort packages by name
 		Map<Integer, String> sortedPackages = MapUtil.sortMapByValue(packages);
 		
 		// export
-		write(sortedPackages);		
+		writePackages(pubDate, sortedPackages);		
 		
-		logger.exiting(loggerName, "run");   
+		logger.info("Export for pub=" + pub + ", pubDate=" + Constants.DELIMITED_DATE_FORMAT.format(pubDate) + " done");
+		
+		logger.exiting(loggerName, "exportPackagesForPubdate");   
 	}
 	
-	private Map<Integer, String> getPackagesToExport() {
+	private Map<Integer, String> getPackagesToExport(String pub, Date pubDate) {
 		logger.entering(loggerName, "getPackagesToExport");   
 		
 		String pubDateString = Constants.DELIMITED_DATE_FORMAT.format(pubDate);
@@ -119,7 +189,7 @@ public class Exporter {
 		// paginated package conditions
 		Condition isPaginatedStoryPackage = paginatedQuery.newCondition(INCMCondition.OBJ_TYPE, INCMCondition.EQUAL, Integer.toString(NCMObjectNodeType.OBJ_STORY_PACKAGE));
 		Condition isPaginated = paginatedQuery.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.GREATER, 0);
-		Condition isLayInPubLevel = getPubLevelCondition(paginatedQuery, INCMCondition.LAY_LEVEL_ID);		
+		Condition isLayInPubLevel = getPubLevelCondition(pub, paginatedQuery, INCMCondition.LAY_LEVEL_ID);		
 		Condition isLayPubDateWithinRangeStart = paginatedQuery.newCondition(INCMCondition.LAY_PUB_DATE, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
 		Condition isLayPubDateWithinRangeEnd = paginatedQuery.newCondition(INCMCondition.LAY_PUB_DATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
 		
@@ -139,7 +209,7 @@ public class Exporter {
 		// non-paginated package conditions		
 		Condition isNonPaginatedStoryPackage = nonPaginatedQuery.newCondition(INCMCondition.OBJ_TYPE, INCMCondition.EQUAL, Integer.toString(NCMObjectNodeType.OBJ_STORY_PACKAGE));		
 		Condition isNotPaginated = nonPaginatedQuery.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.EQUAL, 0);
-		Condition isObjInPubLevel = getPubLevelCondition(nonPaginatedQuery, INCMCondition.OBJ_LEVEL_ID);		
+		Condition isObjInPubLevel = getPubLevelCondition(pub, nonPaginatedQuery, INCMCondition.OBJ_LEVEL_ID);		
 		Condition isExpPubDateWithinRangeStart = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
 		Condition isExpPubDateWithinRangeEnd = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE_TO, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
 				
@@ -154,7 +224,7 @@ public class Exporter {
 		return packages;
 	}
 	
-	private Condition getPubLevelCondition(QueryFilterClient query, String queryPropertyDefName) {
+	private Condition getPubLevelCondition(String pub, QueryFilterClient query, String queryPropertyDefName) {
 		logger.entering(loggerName, "getPubLevelCondition");
 		Condition cond = null;
 		
@@ -213,30 +283,15 @@ public class Exporter {
 		return Integer.parseInt(pk.substring(0, pk.indexOf(":")));
 	}
 	
-	private void write(Map<Integer, String> packages) 
+	private void writePackages(Date pubDate, Map<Integer, String> packages) 
 			throws ParserConfigurationException, UnsupportedEncodingException, IOException, 
 			XMLSerializeWriterException, SAXException, TransformerException, XPathExpressionException {
-		logger.entering(loggerName, "write");
-		
-		// load transform stylesheet
-		File xslFile = new File(props.getProperty("transformStylesheet"));
-		logger.info("Transform stylesheet: " + xslFile.getPath());
-		
-		tf = TransformerFactory.newInstance();		
-		Templates cachedStylesheet = tf.newTemplates(new StreamSource(xslFile));				
-		
-		dbf = DocumentBuilderFactory.newInstance();
-		DocumentBuilder docBuilder = dbf.newDocumentBuilder();			
-
-		xpf = XPathFactory.newInstance();		
-	    XPath xp = xpf.newXPath();    						
-		
+		logger.entering(loggerName, "write");			
 	    
-		// root elements
-		Document doc = docBuilder.newDocument();
-		Element rootElem = doc.createElement("budget");
-		doc.appendChild(rootElem);	
-		
+		// budget element
+		Element budgetElem = doc.createElement("budget");
+		doc.getDocumentElement().appendChild(budgetElem);	
+
 		// pub elements
 		Element pubInfoElem = doc.createElement("pubInfo");
 		
@@ -248,7 +303,7 @@ public class Exporter {
 		pubElem.appendChild(doc.createTextNode(pub));
 		pubInfoElem.appendChild(pubElem);
 		
-		rootElem.appendChild(pubInfoElem);
+		budgetElem.appendChild(pubInfoElem);
 		
 		
 		// packages
@@ -312,29 +367,8 @@ public class Exporter {
 		}
 		
 		packagesElem.setAttribute("count", Integer.toString(count));
-		rootElem.appendChild(packagesElem);
+		budgetElem.appendChild(packagesElem);
 		logger.info("Packages exported count=" + count);
-		
-		
-		// write the output into a file
-		Properties outputProps = new Properties();
-		outputProps.put(OutputKeys.METHOD, "xml");
-		outputProps.put(OutputKeys.INDENT, "yes");
-		outputProps.put(OutputKeys.OMIT_XML_DECLARATION, "no");
-		outputProps.put(OutputKeys.ENCODING, props.getProperty("encoding"));	
-		
-		Timestamp currentTimestamp = new Timestamp(new Date().getTime());
-		File outputFile;
-		if (outputFilename != null && !outputFilename.isEmpty()) {
-			outputFile = new File(props.getProperty("outputDir"), outputFilename);
-		} else {
-			outputFile = new File(props.getProperty("outputDir"), 
-				"budget_" + Constants.NON_DELIMITED_DATE_FORMAT.format(pubDate) + "_" + pub
-				+ "_" + Constants.NON_DELIMITED_DATETIME_FORMAT.format(currentTimestamp)
-				+ ".xml");
-		}
-		writeDocumentToFile(doc, outputFile, outputProps);
-		logger.info("Exported to output file: " + outputFile.getPath());
 		
 		logger.exiting(loggerName, "write");
 	}	
