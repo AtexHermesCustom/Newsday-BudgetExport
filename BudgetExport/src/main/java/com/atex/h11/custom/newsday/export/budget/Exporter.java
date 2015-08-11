@@ -86,7 +86,7 @@ public class Exporter {
 		String pubDatesList = "";
 		for (int i = 0; i < pubDates.size(); i++) {
 			if (i > 0) pubDatesList += ",";
-			pubDatesList += Constants.NON_DELIMITED_DATETIME_FORMAT.format(pubDates.get(i));
+			pubDatesList += Constants.NON_DELIMITED_DATE_FORMAT.format(pubDates.get(i));
 		}
 		logger.info("Parameters: pub=" + pub + ", pubDates=" + pubDatesList);
 		

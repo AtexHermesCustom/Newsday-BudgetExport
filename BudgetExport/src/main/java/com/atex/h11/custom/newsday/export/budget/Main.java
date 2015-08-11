@@ -82,7 +82,7 @@ public class Main {
     	    	deltaStart = 1;	// init value: 1 means tomorrow's date
     	    	if (range[0] != null) deltaStart = Integer.parseInt(range[0]);
     	    	deltaEnd = deltaStart; // init to same value as deltaStart
-    	    	if (range[1] != null) deltaEnd = Integer.parseInt(range[1]);
+    	    	if (range.length == 2 && range[1] != null) deltaEnd = Integer.parseInt(range[1]);
     	    	
     	    	if (deltaEnd < deltaStart) deltaEnd = deltaStart;	// if invalid range, just set to same value
     	    	
@@ -117,7 +117,7 @@ public class Main {
         	if (credentials != null && ! credentials.isEmpty()) {
     	    	String[] creds = credentials.split(":");
     	    	if (creds[0] != null) user = creds[0];
-    	    	if (creds[1] != null) password = creds[1];
+    	    	if (creds.length == 2 && creds[1] != null) password = creds[1];
         	}      
         	
         	// go
