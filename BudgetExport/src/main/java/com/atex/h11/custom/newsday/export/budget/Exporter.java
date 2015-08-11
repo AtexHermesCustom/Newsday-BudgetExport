@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Vector;
 import java.util.logging.Logger;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -45,6 +46,7 @@ import com.atex.h11.custom.newsday.export.budget.util.XSLTMessageReceiver;
 import com.unisys.media.cr.adapter.ncm.common.data.interfaces.query.INCMCondition;
 import com.unisys.media.cr.adapter.ncm.common.data.pk.NCMObjectPK;
 import com.unisys.media.cr.adapter.ncm.common.data.types.NCMObjectNodeType;
+import com.unisys.media.cr.adapter.ncm.common.data.values.NCMObjectBuildProperties;
 import com.unisys.media.cr.adapter.ncm.model.data.datasource.NCMDataSource;
 import com.unisys.media.cr.adapter.ncm.model.data.values.NCMObjectValueClient;
 import com.unisys.media.cr.common.data.query.Condition;
@@ -317,8 +319,7 @@ public class Exporter {
             			
             NCMObjectPK pk = new NCMObjectPK(spId);
 			StoryPackage sp = new StoryPackage(ds);
-	        sp.setConvertFormat(props.getProperty("convertFormat"));			
-	        sp.setDateFormat(Constants.DELIMITED_DATETIME_FORMAT);			            
+			sp.setBuildProperties(getObjectBuildProperties());	// set object build props
             Document spDoc = sp.getDocument(pk);
             
             if (props.getProperty("debug").equalsIgnoreCase("true")) {	// for debug: dump orig xml from H11 per package
@@ -372,6 +373,22 @@ public class Exporter {
 		
 		logger.exiting(loggerName, "write");
 	}	
+	
+	private NCMObjectBuildProperties getObjectBuildProperties() {	
+		NCMObjectBuildProperties buildProps = new NCMObjectBuildProperties();
+		
+		// add properties as needed
+		buildProps.setDateFormat(Constants.DELIMITED_DATETIME_FORMAT);			            
+		buildProps.setIncludeConvertTo(props.getProperty("convertFormat"));			
+
+        buildProps.setXhtmlNestedAsXml(true);
+        buildProps.setNeutralNestedAsXml(true);
+
+        buildProps.setIncludeMetadataChild(true);
+        buildProps.setIncludeMetadataGroups(new Vector<String>());
+		
+		return buildProps;
+	}
 	
 	private void writeDocumentToFile(Document doc, File file) 
 			throws TransformerException {
