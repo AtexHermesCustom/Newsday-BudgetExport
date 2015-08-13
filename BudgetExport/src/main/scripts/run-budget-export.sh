@@ -24,22 +24,22 @@ do
 	case $argswitch in
 		l) PUB=$OPTARG;;
 		d) PUBDATE=$OPTARG;;
-		e) DATEDELTA=$OPTARG;;
+		e) DATEDELTARANGE=$OPTARG;;
 		o) OUTPUTFILENAME=$OPTARG;;
 		t) TESTFLAG=1;;
-		\?) printf "Usage: %s -l publication [-d pubDate | -e daysFromToday] [-o outputFilename]\n" `basename $0`
+		\?) printf "Usage: %s -l publication [-d pubDate | -e daysFromTodayStart:daysFromTodayEnd] [-o outputFilename]\n" `basename $0`
 			exit 2;;
 	esac
 done
 
 # Export arguments
-if [[ ! -z $PUB && (! -z $PUBDATE || ! -z $DATEDELTA) ]]; then
+if [[ ! -z $PUB && (! -z $PUBDATE || ! -z $DATEDELTARANGE) ]]; then
 	XARGS="-c $BATCH_USR:$BATCH_PWD -l $PUB"
 	
 	if [[ ! -z $PUBDATE ]]; then
 		XARGS="$XARGS -d $PUBDATE"
-	elif [[ ! -z $DATEDELTA ]]; then
-		XARGS="$XARGS -e $DATEDELTA"
+	elif [[ ! -z $DATEDELTARANGE ]]; then
+		XARGS="$XARGS -e $DATEDELTARANGE"
 	fi
 	
 	if [[ ! -z $OUTPUTFILENAME ]]; then
