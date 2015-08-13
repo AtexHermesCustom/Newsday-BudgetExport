@@ -47,7 +47,7 @@ if [[ ! -z $PUB && (! -z $PUBDATE || ! -z $DATEDELTARANGE) ]]; then
 	fi
 	
 else
-	printf "Usage: %s -l publication [-d pubDate | -e daysFromToday] [-o outputFilename]\n" `basename $0`
+	printf "Usage: %s -l publication [-d pubDate | -e daysFromTodayStart:daysFromTodayEnd] [-o outputFilename]\n" `basename $0`
 	exit 2
 fi
 
