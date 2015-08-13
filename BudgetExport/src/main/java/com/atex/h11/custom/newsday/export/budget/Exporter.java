@@ -163,9 +163,11 @@ public class Exporter {
 		
 		// get packages to export
 		Map<Integer, String> packages = getPackagesToExport(pub, pubDate);
+		logger.fine("Packages in map count=" + packages.size());
 		
 		// sort packages by name
 		Map<Integer, String> sortedPackages = MapUtil.sortMapByValue(packages);
+		logger.fine("Sorted packages in map count=" + sortedPackages.size());
 		
 		// export
 		writePackages(pubDate, sortedPackages);		
@@ -313,6 +315,7 @@ public class Exporter {
 		int count = 0;
 		
 		logger.info("Exporting packages...");
+		logger.fine("Packages to check for export count: " + packages.size());
 		for (int spId : packages.keySet()) {
 			String spName = packages.get(spId);
 			logger.info("Package: id=" + spId + ", name=" + spName);
