@@ -265,7 +265,8 @@ public class Exporter {
 		Iterator <INodeValueClient> iter = res.getNodesArray().iterator();
 		while (iter.hasNext()) {
 			NCMObjectValueClient obj = (NCMObjectValueClient) iter.next();
-			int objId = getObjIdFromPK(obj.getPK().toString());
+			//int objId = getObjIdFromPK(obj.getPK().toString());
+			int objId = ((NCMObjectPK) obj.getPK()).getObjId();
 			String objName =  obj.getNCMName();
 			
 			if (!packages.containsKey(objId)) {
@@ -281,10 +282,6 @@ public class Exporter {
 		logger.info("Found " + res.getCount() + " packages");
 		
 		logger.exiting(loggerName, "addQueryResultsToMap");
-	}
-	
-	private int getObjIdFromPK(String pk) {
-		return Integer.parseInt(pk.substring(0, pk.indexOf(":")));
 	}
 	
 	private void writePackages(Date pubDate, Map<Integer, String> packages) 
