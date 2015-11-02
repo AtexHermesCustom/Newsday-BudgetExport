@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -159,18 +160,23 @@ public class Exporter {
 			XMLSerializeWriterException, SAXException, TransformerException {
 		logger.entering(loggerName, "exportPackagesForPubdate");
 		
-		logger.info("Exporting packages for pub=" + pub + ", pubDate=" + Constants.DELIMITED_DATE_FORMAT.format(pubDate));
-		
-		// get packages to export
-		Map<Integer, String> packages = getPackagesToExport(pub, pubDate);
-		logger.fine("Packages in map count=" + packages.size());
-		
-		// sort packages by name
-		Map<Integer, String> sortedPackages = MapUtil.sortMapByValue(packages);
-		logger.fine("Sorted packages in map count=" + sortedPackages.size());
-		
-		// export
-		writePackages(pubDate, sortedPackages);		
+		try {
+			logger.info("Exporting packages for pub=" + pub + ", pubDate=" + Constants.DELIMITED_DATE_FORMAT.format(pubDate));
+			
+			// get packages to export
+			Map<Integer, String> packages = getPackagesToExport(pub, pubDate);
+			logger.fine("Packages in map count=" + packages.size());
+			
+			// sort packages by name
+			Map<Integer, String> sortedPackages = MapUtil.sortMapByValue(packages);
+			logger.fine("Sorted packages in map count=" + sortedPackages.size());
+			
+			// export
+			writePackages(pubDate, sortedPackages);		
+			
+		} catch (Exception e) {
+			logger.log(Level.SEVERE, "Error while exporting packages. Error: ", e);
+		}
 		
 		logger.info("Export for pub=" + pub + ", pubDate=" + Constants.DELIMITED_DATE_FORMAT.format(pubDate) + " done");
 		
@@ -191,14 +197,16 @@ public class Exporter {
 		QueryFilterClient paginatedQuery = (QueryFilterClient) ds.newQuery("ncm-object");
 		
 		// paginated package conditions
-		Condition isPaginatedStoryPackage = paginatedQuery.newCondition(INCMCondition.OBJ_TYPE, INCMCondition.EQUAL, Integer.toString(NCMObjectNodeType.OBJ_STORY_PACKAGE));
+		Condition isPaginatedStoryPackage = paginatedQuery.newCondition(INCMCondition.OBJ_TYPE, INCMCondition.EQUAL, Integer.toString(NCMObjectNodeType.OBJ_STORY_PACKAGE));		
 		Condition isPaginated = paginatedQuery.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.GREATER, 0);
+		Condition isPaginatedNotPurged = paginatedQuery.newCondition(INCMCondition.PURGE_FLAG, INCMCondition.EQUAL, 0);		
 		Condition isLayInPubLevel = getPubLevelCondition(pub, paginatedQuery, INCMCondition.LAY_LEVEL_ID);		
 		Condition isLayPubDateWithinRangeStart = paginatedQuery.newCondition(INCMCondition.LAY_PUB_DATE, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
 		Condition isLayPubDateWithinRangeEnd = paginatedQuery.newCondition(INCMCondition.LAY_PUB_DATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
 		
 		Condition paginatedCondition = isPaginatedStoryPackage;
 		paginatedCondition = paginatedCondition.andCondition(isPaginated);
+		paginatedCondition = paginatedCondition.andCondition(isPaginatedNotPurged);
 		paginatedCondition = paginatedCondition.andCondition(isLayInPubLevel);
 		paginatedCondition = paginatedCondition.andCondition(isLayPubDateWithinRangeStart.andCondition(isLayPubDateWithinRangeEnd));
 			
@@ -213,13 +221,15 @@ public class Exporter {
 		// non-paginated package conditions		
 		Condition isNonPaginatedStoryPackage = nonPaginatedQuery.newCondition(INCMCondition.OBJ_TYPE, INCMCondition.EQUAL, Integer.toString(NCMObjectNodeType.OBJ_STORY_PACKAGE));		
 		Condition isNotPaginated = nonPaginatedQuery.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.EQUAL, 0);
+		Condition isNotPaginatedNotPurged = paginatedQuery.newCondition(INCMCondition.PURGE_FLAG, INCMCondition.EQUAL, 0);		
 		Condition isObjInPubLevel = getPubLevelCondition(pub, nonPaginatedQuery, INCMCondition.OBJ_LEVEL_ID);		
 		Condition isExpPubDateWithinRangeStart = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
 		Condition isExpPubDateWithinRangeEnd = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE_TO, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
 				
 		Condition nonPaginatedCondition = isNonPaginatedStoryPackage;
-		nonPaginatedCondition = nonPaginatedCondition.andCondition(isObjInPubLevel);
 		nonPaginatedCondition = nonPaginatedCondition.andCondition(isNotPaginated);
+		nonPaginatedCondition = nonPaginatedCondition.andCondition(isNotPaginatedNotPurged);
+		nonPaginatedCondition = nonPaginatedCondition.andCondition(isObjInPubLevel);
 		nonPaginatedCondition = nonPaginatedCondition.andCondition(isExpPubDateWithinRangeStart.andCondition(isExpPubDateWithinRangeEnd));
 			
 		addQueryResultsToMap(packages, nonPaginatedQuery, nonPaginatedCondition);	// run query		
@@ -313,57 +323,63 @@ public class Exporter {
 		
 		logger.info("Exporting packages...");
 		logger.fine("Packages to check for export count: " + packages.size());
+		
 		for (int spId : packages.keySet()) {
 			String spName = packages.get(spId);
 			logger.info("Package: id=" + spId + ", name=" + spName);
-            			
-            NCMObjectPK pk = new NCMObjectPK(spId);
-			StoryPackage sp = new StoryPackage(ds);
-			sp.setBuildProperties(getObjectBuildProperties());	// set object build props
-            Document spDoc = sp.getDocument(pk);
-            
-            if (props.getProperty("debug").equalsIgnoreCase("true")) {	// for debug: dump orig xml from H11 per package
-            	writeDocumentToFile(spDoc, 
-        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "_" + spName + "_orig.xml"));
-			}
-            	            
-            // transform package document
-            Transformer t = cachedStylesheet.newTransformer();
-    		Controller controller = (Controller) t;
-    		Receiver receiver = new XSLTMessageReceiver(logger);	// for logging messages from XSLT
-    		controller.setMessageEmitter(receiver);            
-
-    		// set parameters - read from properties file
-	        for (String prop : props.stringPropertyNames()) {
-	            if (prop.startsWith("transform.param.")) {
-	                t.setParameter(prop.replaceFirst("transform.param.", ""), props.getProperty(prop));
-	            }
-	        }
-    		
-			t.setOutputProperty(OutputKeys.METHOD, "xml");
-			t.setOutputProperty(OutputKeys.INDENT, "no");
-			t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-			t.setOutputProperty(OutputKeys.ENCODING, props.getProperty("encoding"));
-			DOMResult result = new DOMResult();
-			t.transform(new DOMSource(spDoc), result);	     
 			
-			// resulting document
-			Document resDoc = (Document) result.getNode();
-            if (props.getProperty("debug").equalsIgnoreCase("true")) {	// for debug: dump transformed xml per package
-            	writeDocumentToFile(resDoc, 
-        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "_" + spName + "_transformed.xml"));            	
-			}			
+			try {	            			
+	            NCMObjectPK pk = new NCMObjectPK(spId);
+				StoryPackage sp = new StoryPackage(ds);
+				sp.setBuildProperties(getObjectBuildProperties());	// set object build props
+	            Document spDoc = sp.getDocument(pk);
+	            
+	            if (props.getProperty("debug").equalsIgnoreCase("true")) {	// for debug: dump orig xml from H11 per package
+	            	writeDocumentToFile(spDoc, 
+	        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "_" + spName + "_orig.xml"));
+				}
+	            	            
+	            // transform package document
+	            Transformer t = cachedStylesheet.newTransformer();
+	    		Controller controller = (Controller) t;
+	    		Receiver receiver = new XSLTMessageReceiver(logger);	// for logging messages from XSLT
+	    		controller.setMessageEmitter(receiver);            
 
-            // check that resulting xml has content
-			boolean hasContent = (Boolean) xp.evaluate("/package//text()", 
-					resDoc.getDocumentElement(), XPathConstants.BOOLEAN);
+	    		// set parameters - read from properties file
+		        for (String prop : props.stringPropertyNames()) {
+		            if (prop.startsWith("transform.param.")) {
+		                t.setParameter(prop.replaceFirst("transform.param.", ""), props.getProperty(prop));
+		            }
+		        }
+	    		
+				t.setOutputProperty(OutputKeys.METHOD, "xml");
+				t.setOutputProperty(OutputKeys.INDENT, "no");
+				t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+				t.setOutputProperty(OutputKeys.ENCODING, props.getProperty("encoding"));
+				DOMResult result = new DOMResult();
+				t.transform(new DOMSource(spDoc), result);	     
+				
+				// resulting document
+				Document resDoc = (Document) result.getNode();
+	            if (props.getProperty("debug").equalsIgnoreCase("true")) {	// for debug: dump transformed xml per package
+	            	writeDocumentToFile(resDoc, 
+	        			new File(props.getProperty("debugDir"), Integer.toString(spId) + "_" + spName + "_transformed.xml"));            	
+				}			
 
-			if (hasContent) {	// append only if there's content
-				packagesElem.appendChild(doc.importNode(resDoc.getDocumentElement(), true));
-				count++;
-				logger.info("Package exported: id=" + spId + ", name=" + spName);
-			} else {
-				logger.info("Package not exported: id=" + spId + ", name=" + spName + ". Reason: no content");
+	            // check that resulting xml has content
+				boolean hasContent = (Boolean) xp.evaluate("/package//text()", 
+						resDoc.getDocumentElement(), XPathConstants.BOOLEAN);
+
+				if (hasContent) {	// append only if there's content
+					packagesElem.appendChild(doc.importNode(resDoc.getDocumentElement(), true));
+					count++;
+					logger.info("Package exported: id=" + spId + ", name=" + spName);
+				} else {
+					logger.info("Package not exported: id=" + spId + ", name=" + spName + ". Reason: no content");
+				}
+				
+			} catch (Exception e) {
+				logger.log(Level.SEVERE, "Error while exporting package: id=" + spId + ", name=" + spName + ". Error: ", e);
 			}
 		}
 		
