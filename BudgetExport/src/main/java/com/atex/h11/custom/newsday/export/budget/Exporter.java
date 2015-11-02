@@ -199,7 +199,7 @@ public class Exporter {
 		// paginated package conditions
 		Condition isPaginatedStoryPackage = paginatedQuery.newCondition(INCMCondition.OBJ_TYPE, INCMCondition.EQUAL, Integer.toString(NCMObjectNodeType.OBJ_STORY_PACKAGE));		
 		Condition isPaginated = paginatedQuery.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.GREATER, 0);
-		Condition isPaginatedNotPurged = paginatedQuery.newCondition(INCMCondition.PURGE_FLAG, INCMCondition.EQUAL, 0);		
+		Condition isPaginatedNotPurged = paginatedQuery.newCondition(INCMCondition.OBJ_PURGE_OBJ_ID, INCMCondition.EQUAL, 0);		
 		Condition isLayInPubLevel = getPubLevelCondition(pub, paginatedQuery, INCMCondition.LAY_LEVEL_ID);		
 		Condition isLayPubDateWithinRangeStart = paginatedQuery.newCondition(INCMCondition.LAY_PUB_DATE, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
 		Condition isLayPubDateWithinRangeEnd = paginatedQuery.newCondition(INCMCondition.LAY_PUB_DATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
@@ -221,7 +221,7 @@ public class Exporter {
 		// non-paginated package conditions		
 		Condition isNonPaginatedStoryPackage = nonPaginatedQuery.newCondition(INCMCondition.OBJ_TYPE, INCMCondition.EQUAL, Integer.toString(NCMObjectNodeType.OBJ_STORY_PACKAGE));		
 		Condition isNotPaginated = nonPaginatedQuery.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.EQUAL, 0);
-		Condition isNotPaginatedNotPurged = paginatedQuery.newCondition(INCMCondition.PURGE_FLAG, INCMCondition.EQUAL, 0);		
+		Condition isNotPaginatedNotPurged = paginatedQuery.newCondition(INCMCondition.OBJ_PURGE_OBJ_ID, INCMCondition.EQUAL, 0);		
 		Condition isObjInPubLevel = getPubLevelCondition(pub, nonPaginatedQuery, INCMCondition.OBJ_LEVEL_ID);		
 		Condition isExpPubDateWithinRangeStart = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
 		Condition isExpPubDateWithinRangeEnd = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE_TO, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
