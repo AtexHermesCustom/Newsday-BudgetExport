@@ -18,7 +18,7 @@
     exclude-result-prefixes="xsl xs xdt err fn local">
     
 	<xsl:param name="timezoneOffsetHours" select="'0'"/>
-	<xsl:param name="offsetFormatted" select="local:getOffsetFormatted(xs:string($timezoneOffsetHours))"/>
+	<xsl:variable name="offsetFormatted" select="local:getOffsetFormatted(xs:string($timezoneOffsetHours))"/>
         
     <xsl:template match="/">
     	<xsl:variable name="spMeta" select="./ncm-object/extra-properties/SP"/>
