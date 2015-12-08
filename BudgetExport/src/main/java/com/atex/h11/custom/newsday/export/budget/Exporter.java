@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -75,6 +76,8 @@ public class Exporter {
 	private DocumentBuilder docBuilder = null;
 	private XPath xp = null;
 
+	private int timezoneOffsetHours;
+	
 	private Properties props = null;
 	private String pub;
 	private List<Date> pubDates = new ArrayList<Date>();	
@@ -119,6 +122,9 @@ public class Exporter {
 		xpf = XPathFactory.newInstance();		
 	    xp = xpf.newXPath();    				
 		
+	    // timezone offset
+	    timezoneOffsetHours = getTimezoneOffsetHours(props.getProperty("timezone"));
+	    
 	    
 		// output xml document
 		doc = docBuilder.newDocument();
@@ -348,6 +354,9 @@ public class Exporter {
 	    		Receiver receiver = new XSLTMessageReceiver(logger);	// for logging messages from XSLT
 	    		controller.setMessageEmitter(receiver);            
 
+	    		// set timezone hours parameter
+	    		t.setParameter("timezoneOffsetHours", timezoneOffsetHours);
+	    		
 	    		// set parameters - read from properties file
 		        for (String prop : props.stringPropertyNames()) {
 		            if (prop.startsWith("transform.param.")) {
@@ -429,5 +438,12 @@ public class Exporter {
 			t.setOutputProperty(OutputKeys.ENCODING, Constants.DEFAULT_ENCODING);			
 		}
 		t.transform(source, result);			
+	}
+	
+	private int getTimezoneOffsetHours(String timezoneId) {
+		TimeZone tz = TimeZone.getTimeZone(timezoneId);
+		int offsetHours = tz.getOffset((new Date()).getTime()) / 1000 / 60 / 60;
+		logger.info("Timezone: id=" + timezoneId + ", offsetHours=" + offsetHours);
+		return offsetHours;
 	}
 }

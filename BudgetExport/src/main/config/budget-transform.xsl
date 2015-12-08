@@ -16,6 +16,9 @@
     xmlns:err="http://www.w3.org/2005/xqt-errors"
     xmlns:local="http://www.atex.com/local"
     exclude-result-prefixes="xsl xs xdt err fn local">
+    
+	<xsl:param name="timezoneOffsetHours" select="'0'"/>
+	<xsl:param name="offsetFormatted" select="local:getOffsetFormatted($timezoneOffsetHours)"/>
         
     <xsl:template match="/">
     	<xsl:variable name="spMeta" select="./ncm-object/extra-properties/SP"/>
@@ -40,6 +43,7 @@
 	<xsl:template match="ncm-object">
 	    <xsl:variable name="obj" select="."/>
     	<xsl:variable name="spMeta" select="$obj/extra-properties/SP"/>
+    	<xsl:variable name="webMeta" select="$obj/extra-properties/WEB"/>
 	
 		<name><xsl:value-of select="$obj/name"/></name>
 		<id><xsl:value-of select="$obj/obj_id"/></id>
@@ -102,5 +106,43 @@
 				<community><xsl:value-of select="."/></community>
 			</xsl:for-each>			
 		</communities>
+		<web>
+			<contentId><xsl:value-of select="$webMeta/CONTENT_ID"/></contentId>
+			<updateDate>
+				<xsl:if test="string-length(normalize-space($webMeta/UPDATE_TS)) &gt; 0">
+					<xsl:value-of select="format-dateTime(
+						adjust-dateTime-to-timezone(local:stringToDate($webMeta/UPDATE_TS), xs:dayTimeDuration($offsetFormatted)),
+						'[M01]-[D01]-[Y0001]')"/>
+				</xsl:if>
+			</updateDate>
+			<updateTime>
+				<xsl:if test="string-length(normalize-space($webMeta/UPDATE_TS)) &gt; 0">
+					<xsl:value-of select="format-dateTime(
+						adjust-dateTime-to-timezone(local:stringToDate($webMeta/UPDATE_TS), xs:dayTimeDuration($offsetFormatted)), 
+						'[h01]:[m01] [P]')"/>
+				</xsl:if>
+			</updateTime>
+		</web>
 	</xsl:template>
+	
+	<xsl:function name="local:stringToDate">
+		<xsl:param name="in"/><!-- sample input: 20151207T124633Z -->
+		<xsl:variable name="formatted"
+			select="concat(substring($in, 1, 4), '-', substring($in, 5, 2), '-', substring($in, 7, 2), 'T',
+				substring($in, 10, 2), ':', substring($in, 12, 2), ':', substring($in, 14, 2))"/>
+		<xsl:value-of select="xs:dateTime($formatted)"/>
+	</xsl:function>
+	
+	<xsl:function name="local:getOffsetFormatted">
+		<xsl:param name="in"/>
+		<xsl:choose>
+			<xsl:when test="starts-with($in, '-')">
+				<xsl:value-of select="concat('-PT', substring($in, 2), 'H')"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="concat('PT', $in, 'H')"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:function>
+	
 </xsl:stylesheet>
