@@ -223,9 +223,12 @@ public class Exporter {
 		Condition isNotPaginated = nonPaginatedQuery.newCondition(INCMCondition.LAY_PAGE_ID, INCMCondition.EQUAL, 0);
 		Condition isNotPaginatedNotPurged = paginatedQuery.newCondition(INCMCondition.OBJ_PURGE_OBJ_ID, INCMCondition.EQUAL, 0);		
 		Condition isObjInPubLevel = getPubLevelCondition(pub, nonPaginatedQuery, INCMCondition.OBJ_LEVEL_ID);		
-		Condition isExpPubDateWithinRangeStart = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
-		Condition isExpPubDateWithinRangeEnd = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE_TO, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
-				
+		// 20151208 just check the EXP_PUBDATE
+		// Condition isExpPubDateWithinRangeStart = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
+		// Condition isExpPubDateWithinRangeEnd = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE_TO, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
+		Condition isExpPubDateWithinRangeStart = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE, INCMCondition.GREATEROREQUAL, pubDateString + " 00:00:00");
+		Condition isExpPubDateWithinRangeEnd = nonPaginatedQuery.newCondition(INCMCondition.OBJ_EXP_PUBDATE, INCMCondition.LESSOREQUAL, pubDateString + " 23:59:59");
+		
 		Condition nonPaginatedCondition = isNonPaginatedStoryPackage;
 		nonPaginatedCondition = nonPaginatedCondition.andCondition(isNotPaginated);
 		nonPaginatedCondition = nonPaginatedCondition.andCondition(isNotPaginatedNotPurged);
