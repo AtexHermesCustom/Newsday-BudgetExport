@@ -18,7 +18,7 @@
     exclude-result-prefixes="xsl xs xdt err fn local">
     
 	<xsl:param name="timezoneOffsetHours" select="'0'"/>
-	<xsl:param name="offsetFormatted" select="local:getOffsetFormatted($timezoneOffsetHours)"/>
+	<xsl:param name="offsetFormatted" select="local:getOffsetFormatted(xs:string($timezoneOffsetHours))"/>
         
     <xsl:template match="/">
     	<xsl:variable name="spMeta" select="./ncm-object/extra-properties/SP"/>
@@ -111,30 +111,30 @@
 			<updateDate>
 				<xsl:if test="string-length(normalize-space($webMeta/UPDATE_TS)) &gt; 0">
 					<xsl:value-of select="format-dateTime(
-						adjust-dateTime-to-timezone(local:stringToDate($webMeta/UPDATE_TS), xs:dayTimeDuration($offsetFormatted)),
+						adjust-dateTime-to-timezone(local:stringToDateTime($webMeta/UPDATE_TS), xs:dayTimeDuration($offsetFormatted)),
 						'[M01]-[D01]-[Y0001]')"/>
 				</xsl:if>
 			</updateDate>
 			<updateTime>
 				<xsl:if test="string-length(normalize-space($webMeta/UPDATE_TS)) &gt; 0">
 					<xsl:value-of select="format-dateTime(
-						adjust-dateTime-to-timezone(local:stringToDate($webMeta/UPDATE_TS), xs:dayTimeDuration($offsetFormatted)), 
+						adjust-dateTime-to-timezone(local:stringToDateTime($webMeta/UPDATE_TS), xs:dayTimeDuration($offsetFormatted)), 
 						'[h01]:[m01] [P]')"/>
 				</xsl:if>
-			</updateTime>
+			</updateTime>	
 		</web>
 	</xsl:template>
 	
-	<xsl:function name="local:stringToDate">
+	<xsl:function name="local:stringToDateTime" as="xs:dateTime">
 		<xsl:param name="in"/><!-- sample input: 20151207T124633Z -->
 		<xsl:variable name="formatted"
 			select="concat(substring($in, 1, 4), '-', substring($in, 5, 2), '-', substring($in, 7, 2), 'T',
-				substring($in, 10, 2), ':', substring($in, 12, 2), ':', substring($in, 14, 2))"/>
+				substring($in, 10, 2), ':', substring($in, 12, 2), ':', substring($in, 14, 2), '-00:00')"/>
 		<xsl:value-of select="xs:dateTime($formatted)"/>
 	</xsl:function>
 	
-	<xsl:function name="local:getOffsetFormatted">
-		<xsl:param name="in"/>
+	<xsl:function name="local:getOffsetFormatted" as="xs:string">
+		<xsl:param name="in" as="xs:string"/>
 		<xsl:choose>
 			<xsl:when test="starts-with($in, '-')">
 				<xsl:value-of select="concat('-PT', substring($in, 2), 'H')"/>

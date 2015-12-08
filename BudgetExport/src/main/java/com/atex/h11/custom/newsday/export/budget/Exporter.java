@@ -76,7 +76,7 @@ public class Exporter {
 	private DocumentBuilder docBuilder = null;
 	private XPath xp = null;
 
-	private int timezoneOffsetHours;
+	private int timezoneOffsetHours = 0;
 	
 	private Properties props = null;
 	private String pub;
@@ -123,7 +123,9 @@ public class Exporter {
 	    xp = xpf.newXPath();    				
 		
 	    // timezone offset
-	    timezoneOffsetHours = getTimezoneOffsetHours(props.getProperty("timezone"));
+	    if (props.getProperty("adjustTimezone").trim().equalsIgnoreCase("true")) {
+	    	timezoneOffsetHours = getTimezoneOffsetHours(props.getProperty("timezone"));
+	    }
 	    
 	    
 		// output xml document
